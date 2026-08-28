@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bench.flyovercoder.com/schemas/task.schema.json",
+  "title": "Review Benchmark Task",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "task_id", "title", "family_id", "origin", "language", "visibility", "source", "files", "context"],
+  "properties": {
+    "schema": {"const": "review-benchmark/task/1"},
+    "task_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,79}$"},
+    "title": {"type": "string", "minLength": 1},
+    "family_id": {"type": "string", "minLength": 1},
+    "origin": {"enum": ["planted", "clean-control", "human-review", "production-escape", "fresh-mutation", "partner-unpublished"]},
+    "language": {"type": "string", "minLength": 1},
+    "visibility": {"enum": ["public", "private"]},
+    "source": {"type": "object"},
+    "files": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["diff", "checkout", "gold"],
+      "properties": {
+        "diff": {"type": "string"},
+        "checkout": {"type": "string"},
+        "gold": {"type": "string"},
+        "adjudications": {"type": "string"}
+      }
+    },
+    "context": {"type": "object"}
+  }
+}

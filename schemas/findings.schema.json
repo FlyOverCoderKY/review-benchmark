@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bench.flyovercoder.com/schemas/findings.schema.json",
+  "title": "Normalized Review Findings",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "task_id", "attempt_id", "findings"],
+  "properties": {
+    "schema": {"const": "review-benchmark/findings/1"},
+    "task_id": {"type": "string", "minLength": 1},
+    "attempt_id": {"type": "string", "minLength": 1},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "line", "severity", "title", "detail"],
+        "properties": {
+          "path": {"type": ["string", "null"]},
+          "line": {"type": ["integer", "null"], "minimum": 1},
+          "severity": {"enum": ["bug", "risk", "nit"]},
+          "title": {"type": "string", "minLength": 1},
+          "detail": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

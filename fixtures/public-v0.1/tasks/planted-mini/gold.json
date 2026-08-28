@@ -1,0 +1,117 @@
+{
+  "completeness": "synthetic-complete",
+  "findings": [
+    {
+      "context": "diff",
+      "defect_statement": "The new 2027 constant is stale at 8,300 instead of 8,550.",
+      "id": "PM-B1",
+      "impact": "Valid 2027 contributions are under-counted by as much as 250.",
+      "match": {
+        "keywords": [
+          "2027.{0,100}(8[_,]?300|stale|same.{0,20}2026)",
+          "cap.{0,80}8[_,]?550"
+        ],
+        "paths": [
+          "calc.py"
+        ]
+      },
+      "proof": [
+        "clean twin test_2027_cap",
+        "independent fixture specification"
+      ],
+      "severity": "bug",
+      "title": "The 2027 cap repeats the 2026 amount",
+      "trigger": "Apply the cap to a 2027 contribution above 8,300."
+    },
+    {
+      "context": "diff",
+      "defect_statement": "contribution_total removed the non-negative validation.",
+      "id": "PM-B2",
+      "impact": "Invalid negative contributions silently reduce the total.",
+      "match": {
+        "keywords": [
+          "negative.{0,100}(valid|reject|accept)",
+          "validation.{0,100}contribution_total"
+        ],
+        "paths": [
+          "calc.py"
+        ]
+      },
+      "proof": [
+        "base negative-amount test",
+        "clean twin negative-amount test"
+      ],
+      "severity": "bug",
+      "title": "Negative contributions are no longer rejected",
+      "trigger": "Call contribution_total with a negative element."
+    },
+    {
+      "context": "diff",
+      "defect_statement": "average_contribution divides by len(amounts) without an empty-input guard.",
+      "id": "PM-B3",
+      "impact": "A valid empty collection causes ZeroDivisionError instead of a domain error.",
+      "match": {
+        "keywords": [
+          "(empty|zero).{0,100}(average|division|len)",
+          "ZeroDivisionError"
+        ],
+        "paths": [
+          "calc.py"
+        ]
+      },
+      "proof": [
+        "clean twin test_average_rejects_empty"
+      ],
+      "severity": "risk",
+      "title": "Average crashes on an empty list",
+      "trigger": "Call average_contribution([])."
+    },
+    {
+      "context": "file",
+      "defect_statement": "annual_report still calls apply_cap without forwarding year.",
+      "id": "PM-B4",
+      "impact": "The report labels output as 2027 while calculating with 2026 rules.",
+      "match": {
+        "keywords": [
+          "(ignore|omit|forward|pass).{0,100}year",
+          "default.{0,100}(2026|plan year)"
+        ],
+        "paths": [
+          "report.py"
+        ]
+      },
+      "proof": [
+        "clean twin test_2027_report",
+        "report.py call path"
+      ],
+      "severity": "bug",
+      "title": "Annual reports ignore their requested plan year",
+      "trigger": "Generate a 2027 report for a contribution above the 2026 cap."
+    },
+    {
+      "context": "repo",
+      "defect_statement": "CAPS accepts 2027 while rules.SUPPORTED_YEARS still lists only 2026.",
+      "id": "PM-B5",
+      "impact": "Different code paths disagree about whether 2027 is supported.",
+      "match": {
+        "keywords": [
+          "SUPPORTED_YEARS.{0,100}2027",
+          "registry.{0,100}(omit|missing|inconsistent)"
+        ],
+        "paths": [
+          "rules.py",
+          "calc.py"
+        ]
+      },
+      "proof": [
+        "clean twin rules.py",
+        "cross-file registry invariant"
+      ],
+      "severity": "risk",
+      "title": "The supported-year registry omits 2027",
+      "trigger": "A caller validates 2027 against the repository rule registry."
+    }
+  ],
+  "schema": "review-benchmark/gold/1",
+  "task_id": "planted-mini"
+}

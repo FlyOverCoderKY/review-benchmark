@@ -1,0 +1,57 @@
+diff --git a/calc.py b/calc.py
+index 935e843..9273b6d 100644
+--- a/calc.py
++++ b/calc.py
+@@ -1,6 +1,6 @@
+ """Contribution calculations for a small benefits service."""
+ 
+-CAPS = {2026: 8_300}
++CAPS = {2026: 8_300, 2027: 8_300}
+ 
+ 
+ def apply_cap(amount: int, year: int = 2026) -> int:
+@@ -8,7 +8,8 @@ def apply_cap(amount: int, year: int = 2026) -> int:
+ 
+ 
+ def contribution_total(amounts: list[int]) -> int:
+-    for amount in amounts:
+-        if amount < 0:
+-            raise ValueError("amount must be non-negative")
+     return sum(amounts)
++
++
++def average_contribution(amounts: list[int]) -> float:
++    return contribution_total(amounts) / len(amounts)
+diff --git a/tests/test_calc.py b/tests/test_calc.py
+index 7abe4ae..36fc08f 100644
+--- a/tests/test_calc.py
++++ b/tests/test_calc.py
+@@ -1,4 +1,4 @@
+-from calc import apply_cap, contribution_total
++from calc import apply_cap, average_contribution, contribution_total
+ from report import annual_report
+ 
+ 
+@@ -6,6 +6,14 @@ def test_2026_cap() -> None:
+     assert apply_cap(9_000, 2026) == 8_300
+ 
+ 
++def test_2027_cap_uses_table() -> None:
++    assert apply_cap(9_000, 2027) == 8_300
++
++
++def test_average() -> None:
++    assert average_contribution([100, 300]) == 200
++
++
+ def test_negative_amount() -> None:
+     try:
+         contribution_total([100, -1])
+@@ -14,5 +22,5 @@ def test_negative_amount() -> None:
+     raise AssertionError("negative amount accepted")
+ 
+ 
+-def test_2026_report() -> None:
+-    assert annual_report([9_000], 2026)["capped_total"] == 8_300
++def test_2027_report_uses_new_year() -> None:
++    assert annual_report([9_000], 2027)["year"] == 2027

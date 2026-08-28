@@ -1,0 +1,19 @@
+{
+  "generated_with": "scripts/generate_pilot_fixtures.py",
+  "release_id": "public-v0.1",
+  "schema": "review-benchmark/release/1",
+  "status": "calibration",
+  "tasks": [
+    {
+      "path": "tasks/planted-mini",
+      "task_id": "planted-mini",
+      "task_manifest_sha256": "8d7011e7dfcb701e9ecdeef0b143eac486273b3081e4fc421e7214271699a058"
+    },
+    {
+      "path": "tasks/planted-mini-clean",
+      "task_id": "planted-mini-clean",
+      "task_manifest_sha256": "7e110a80af087f6f997de96cc8e485434f23f204b6c476f975d217faf008db73"
+    }
+  ],
+  "visibility": "public"
+}

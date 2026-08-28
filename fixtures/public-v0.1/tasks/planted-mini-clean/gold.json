@@ -1,0 +1,6 @@
+{
+  "completeness": "synthetic-complete",
+  "findings": [],
+  "schema": "review-benchmark/gold/1",
+  "task_id": "planted-mini-clean"
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bench.flyovercoder.com/schemas/public-result.schema.json",
+  "title": "Public-safe Official Run Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "run_id", "status", "track", "subject", "release", "provenance", "quality", "operations"],
+  "properties": {
+    "schema": {"const": "review-benchmark/public-result/1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["provisional", "official", "reproduced", "superseded", "withdrawn", "disputed"]},
+    "track": {"enum": ["fixed-harness-model", "end-to-end-product"]},
+    "subject": {"type": "object"},
+    "release": {"type": "object"},
+    "provenance": {"type": "object"},
+    "quality": {"type": "object"},
+    "operations": {"type": "object"}
+  }
+}

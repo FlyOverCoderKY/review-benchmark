@@ -1,0 +1,14 @@
+{
+  "schema": "review-benchmark/findings/1",
+  "task_id": "planted-mini",
+  "attempt_id": "example-1",
+  "findings": [
+    {
+      "path": "calc.py",
+      "line": 4,
+      "severity": "bug",
+      "title": "The 2027 cap repeats the 2026 value",
+      "detail": "CAP_2027 is stale at 8,300 instead of the independently documented 8,550 amount."
+    }
+  ]
+}
