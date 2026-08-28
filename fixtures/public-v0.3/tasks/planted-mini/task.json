@@ -1,0 +1,34 @@
+{
+  "context": {
+    "code_execution": false,
+    "minimum_classes": [
+      "diff",
+      "file",
+      "repo"
+    ],
+    "network": false,
+    "reviewer_access": [
+      "diff",
+      "checkout"
+    ]
+  },
+  "family_id": "planted-mini-family",
+  "files": {
+    "adjudications": "adjudications.json",
+    "checkout": "checkout",
+    "diff": "diff.patch",
+    "gold": "gold.json"
+  },
+  "language": "python",
+  "origin": "planted",
+  "schema": "review-benchmark/task/1",
+  "source": {
+    "generator": "scripts/generate_pilot_fixtures.py",
+    "kind": "synthetic",
+    "license_spdx": "MIT",
+    "repository": "https://github.com/FlyOverCoderKY/review-benchmark"
+  },
+  "task_id": "planted-mini",
+  "title": "Mini benefits change",
+  "visibility": "public"
+}

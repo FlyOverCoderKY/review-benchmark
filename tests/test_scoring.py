@@ -101,7 +101,7 @@ def test_public_registry_finding_matches_supported_year_gold() -> None:
     task_root = (
         Path(__file__).parents[1]
         / "fixtures"
-        / "public-v0.2"
+        / "public-v0.3"
         / "tasks"
         / "planted-mini"
     )
@@ -126,11 +126,11 @@ def test_public_registry_finding_matches_supported_year_gold() -> None:
     assert score.pending == ()
 
 
-def test_public_report_coverage_finding_matches_v02_gold() -> None:
+def test_public_report_coverage_finding_matches_latest_gold() -> None:
     task_root = (
         Path(__file__).parents[1]
         / "fixtures"
-        / "public-v0.2"
+        / "public-v0.3"
         / "tasks"
         / "planted-mini"
     )
