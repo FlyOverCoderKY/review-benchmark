@@ -101,7 +101,7 @@ def test_public_registry_finding_matches_supported_year_gold() -> None:
     task_root = (
         Path(__file__).parents[1]
         / "fixtures"
-        / "public-v0.3"
+        / "public-v0.4"
         / "tasks"
         / "planted-mini"
     )
@@ -130,7 +130,7 @@ def test_public_report_coverage_finding_matches_latest_gold() -> None:
     task_root = (
         Path(__file__).parents[1]
         / "fixtures"
-        / "public-v0.3"
+        / "public-v0.4"
         / "tasks"
         / "planted-mini"
     )
@@ -149,4 +149,80 @@ def test_public_report_coverage_finding_matches_latest_gold() -> None:
     score = score_findings(task, (finding,))
 
     assert score.matched == ((0, "PM-B6"),)
+    assert score.pending == ()
+
+
+def test_empty_input_test_coverage_restatement_is_a_duplicate() -> None:
+    task_root = (
+        Path(__file__).parents[1]
+        / "fixtures"
+        / "public-v0.4"
+        / "tasks"
+        / "planted-mini"
+    )
+    task = load_task(task_root)
+    findings = (
+        Finding(
+            path="calc.py",
+            line=15,
+            severity="risk",
+            title="Average crashes on empty input",
+            detail="average_contribution([]) raises ZeroDivisionError.",
+        ),
+        Finding(
+            path="tests/test_calc.py",
+            line=13,
+            severity="nit",
+            title="New average has no edge-case coverage",
+            detail="No test covers the empty-list ZeroDivisionError path.",
+        ),
+    )
+
+    score = score_findings(task, findings)
+
+    assert len(score.matched) == 1
+    assert len(score.duplicates) == 1
+    assert score.matched[0][1] == score.duplicates[0][1] == "PM-B3"
+    assert score.pending == ()
+
+
+def test_v04_clean_calibration_comments_are_fully_adjudicated() -> None:
+    task_root = (
+        Path(__file__).parents[1]
+        / "fixtures"
+        / "public-v0.4"
+        / "tasks"
+        / "planted-mini-clean"
+    )
+    task = load_task(task_root)
+    findings = (
+        Finding("calc.py", 6, "risk", "Hardcoded default year 2026 is stale", "default"),
+        Finding("calc.py", 8, "nit", "apply_cap accepts negative amounts", "negative"),
+        Finding("calc.py", 21, "nit", "Average loses precision for large integer", "overflow"),
+        Finding(
+            "tests/test_calc.py",
+            20,
+            "nit",
+            "2027 cap boundary is untested",
+            "below 8_550",
+        ),
+        Finding(
+            "tests/test_calc.py",
+            30,
+            "nit",
+            "Registry derivation test is tautological",
+            "SUPPORTED_YEARS",
+        ),
+        Finding(
+            "tests/test_calc.py",
+            1,
+            "nit",
+            "pytest dependency lacks a manifest",
+            "import",
+        ),
+    )
+
+    score = score_findings(task, findings)
+
+    assert len(score.false_positives) == 6
     assert score.pending == ()

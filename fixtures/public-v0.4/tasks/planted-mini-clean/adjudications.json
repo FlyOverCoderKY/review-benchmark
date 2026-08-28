@@ -1,0 +1,90 @@
+{
+  "findings": [
+    {
+      "id": "PM-CFP1",
+      "match": {
+        "keywords": [
+          "(default|hardcoded).{0,120}(2026|stale|year)",
+          "2026.{0,120}(default|stale)"
+        ],
+        "paths": [
+          "calc.py"
+        ]
+      },
+      "rationale": "The unchanged 2026 default is an explicitly documented compatibility contract; every changed in-repository caller passes year explicitly. Speculation about unknown external callers or future retirement is not a defect introduced by this patch.",
+      "verdict": "false_positive"
+    },
+    {
+      "id": "PM-CFP2",
+      "match": {
+        "keywords": [
+          "apply_cap.{0,140}negative",
+          "negative.{0,140}apply_cap"
+        ],
+        "paths": [
+          "calc.py"
+        ]
+      },
+      "rationale": "Direct negative input to apply_cap is unchanged base behavior and is not on the modified report path, which validates through contribution_total.",
+      "verdict": "false_positive"
+    },
+    {
+      "id": "PM-CFP3",
+      "match": {
+        "keywords": [
+          "(overflow|precision|2\\*\\*53|10\\*\\*400).{0,160}(average|float|integer)",
+          "average.{0,160}(overflow|precision|large integer)"
+        ],
+        "paths": [
+          "calc.py"
+        ]
+      },
+      "rationale": "Values above floating-point range are outside the contribution domain; the finding supplies no realistic benefits-service trigger or impact.",
+      "verdict": "false_positive"
+    },
+    {
+      "id": "PM-CFP4",
+      "match": {
+        "keywords": [
+          "2027.{0,140}(boundary|below|8[_,]?550|8[_,]?549)"
+        ],
+        "paths": [
+          "tests/test_calc.py"
+        ]
+      },
+      "rationale": "The 2027 above-cap test pins its exact cap value, while the shared min logic's pass-through and boundary branches are already covered for 2026; there is no year-specific boundary branch left untested.",
+      "verdict": "false_positive"
+    },
+    {
+      "id": "PM-CFP5",
+      "match": {
+        "keywords": [
+          "(registry|SUPPORTED_YEARS).{0,160}(tautolog|deriv|hard.?cod)",
+          "(tautolog|cannot fail).{0,160}(registry|cap table)"
+        ],
+        "paths": [
+          "tests/test_calc.py",
+          "rules.py"
+        ]
+      },
+      "rationale": "The source itself derives SUPPORTED_YEARS from CAPS and the test pins the public values. Tests need not enforce one implementation spelling through source introspection.",
+      "verdict": "false_positive"
+    },
+    {
+      "id": "PM-CFP6",
+      "match": {
+        "keywords": [
+          "pytest.{0,160}(dependenc|manifest|requirements|import)",
+          "(dependenc|manifest).{0,160}pytest"
+        ],
+        "paths": [
+          "tests/test_calc.py"
+        ]
+      },
+      "rationale": "The test module already requires a pytest-compatible runner for discovery and fixtures are executed in the benchmark's declared pytest environment; the explicit import does not add a new production dependency.",
+      "verdict": "false_positive"
+    }
+  ],
+  "schema": "review-benchmark/adjudications/1",
+  "task_id": "planted-mini-clean"
+}

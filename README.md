@@ -12,15 +12,15 @@ Those results live on separate tracks because they answer different questions.
 
 ## Current status
 
-`v0.3-pilot` is under construction. The public calibration suite and scorer are
+`v0.4-pilot` is under construction. The public calibration suite and scorer are
 usable for harness development, but there is no official leaderboard claim yet.
 
 ## Quick start
 
 ```bash
-python -m review_benchmark validate-release fixtures/public-v0.3
+python -m review_benchmark validate-release fixtures/public-v0.4
 python -m review_benchmark score \
-  fixtures/public-v0.3/tasks/planted-mini \
+  fixtures/public-v0.4/tasks/planted-mini \
   examples/planted-findings.json
 ```
 

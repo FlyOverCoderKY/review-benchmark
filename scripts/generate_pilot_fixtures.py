@@ -8,6 +8,7 @@ correct. Run without arguments to generate the latest release, or with
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import os
@@ -17,7 +18,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-LATEST_RELEASE_ROOT = ROOT / "fixtures" / "public-v0.3"
+LATEST_RELEASE_ROOT = ROOT / "fixtures" / "public-v0.4"
 
 BASE = {
     "calc.py": '''"""Contribution calculations for a small benefits service."""
@@ -513,6 +514,109 @@ GOLD_V02 = [
     },
 ]
 
+GOLD_V04 = copy.deepcopy(GOLD_V02)
+for expected in GOLD_V04:
+    if expected["id"] == "PM-B3":
+        expected["match"]["paths"].append("tests/test_calc.py")
+        expected["match"]["keywords"].extend(
+            [
+                "(test|coverage).{0,160}(empty|ZeroDivisionError)",
+                "(empty|ZeroDivisionError).{0,160}(test|coverage)",
+            ]
+        )
+
+CLEAN_ADJUDICATIONS_V04 = [
+    {
+        "id": "PM-CFP1",
+        "verdict": "false_positive",
+        "rationale": (
+            "The unchanged 2026 default is an explicitly documented compatibility "
+            "contract; every changed in-repository caller passes year explicitly. "
+            "Speculation about unknown external callers or future retirement is not "
+            "a defect introduced by this patch."
+        ),
+        "match": {
+            "paths": ["calc.py"],
+            "keywords": [
+                "(default|hardcoded).{0,120}(2026|stale|year)",
+                "2026.{0,120}(default|stale)",
+            ],
+        },
+    },
+    {
+        "id": "PM-CFP2",
+        "verdict": "false_positive",
+        "rationale": (
+            "Direct negative input to apply_cap is unchanged base behavior and is not "
+            "on the modified report path, which validates through contribution_total."
+        ),
+        "match": {
+            "paths": ["calc.py"],
+            "keywords": ["apply_cap.{0,140}negative", "negative.{0,140}apply_cap"],
+        },
+    },
+    {
+        "id": "PM-CFP3",
+        "verdict": "false_positive",
+        "rationale": (
+            "Values above floating-point range are outside the contribution domain; "
+            "the finding supplies no realistic benefits-service trigger or impact."
+        ),
+        "match": {
+            "paths": ["calc.py"],
+            "keywords": [
+                "(overflow|precision|2\\*\\*53|10\\*\\*400).{0,160}(average|float|integer)",
+                "average.{0,160}(overflow|precision|large integer)",
+            ],
+        },
+    },
+    {
+        "id": "PM-CFP4",
+        "verdict": "false_positive",
+        "rationale": (
+            "The 2027 above-cap test pins its exact cap value, while the shared min "
+            "logic's pass-through and boundary branches are already covered for 2026; "
+            "there is no year-specific boundary branch left untested."
+        ),
+        "match": {
+            "paths": ["tests/test_calc.py"],
+            "keywords": ["2027.{0,140}(boundary|below|8[_,]?550|8[_,]?549)"],
+        },
+    },
+    {
+        "id": "PM-CFP5",
+        "verdict": "false_positive",
+        "rationale": (
+            "The source itself derives SUPPORTED_YEARS from CAPS and the test pins the "
+            "public values. Tests need not enforce one implementation spelling through "
+            "source introspection."
+        ),
+        "match": {
+            "paths": ["tests/test_calc.py", "rules.py"],
+            "keywords": [
+                "(registry|SUPPORTED_YEARS).{0,160}(tautolog|deriv|hard.?cod)",
+                "(tautolog|cannot fail).{0,160}(registry|cap table)",
+            ],
+        },
+    },
+    {
+        "id": "PM-CFP6",
+        "verdict": "false_positive",
+        "rationale": (
+            "The test module already requires a pytest-compatible runner for discovery "
+            "and fixtures are executed in the benchmark's declared pytest environment; "
+            "the explicit import does not add a new production dependency."
+        ),
+        "match": {
+            "paths": ["tests/test_calc.py"],
+            "keywords": [
+                "pytest.{0,160}(dependenc|manifest|requirements|import)",
+                "(dependenc|manifest).{0,160}pytest",
+            ],
+        },
+    },
+]
+
 
 def write_tree(root: Path, tree: dict[str, str]) -> None:
     for relative, content in tree.items():
@@ -576,6 +680,7 @@ def write_task(
     *,
     clean: bool,
     gold: list[dict],
+    clean_adjudications: list[dict],
 ) -> None:
     task_root = root / "tasks" / name
     checkout = task_root / "checkout"
@@ -601,7 +706,7 @@ def write_task(
         {
             "schema": "review-benchmark/adjudications/1",
             "task_id": name,
-            "findings": [],
+            "findings": clean_adjudications if clean else [],
         },
     )
     write_json(
@@ -646,9 +751,25 @@ def generate(
     release_id: str,
     clean_tree: dict[str, str],
     gold: list[dict],
+    clean_adjudications: list[dict] | None = None,
 ) -> None:
-    write_task(root, "planted-mini", PLANTED, clean=False, gold=gold)
-    write_task(root, "planted-mini-clean", clean_tree, clean=True, gold=gold)
+    adjudications = clean_adjudications or []
+    write_task(
+        root,
+        "planted-mini",
+        PLANTED,
+        clean=False,
+        gold=gold,
+        clean_adjudications=adjudications,
+    )
+    write_task(
+        root,
+        "planted-mini-clean",
+        clean_tree,
+        clean=True,
+        gold=gold,
+        clean_adjudications=adjudications,
+    )
     tasks = []
     for name in ("planted-mini", "planted-mini-clean"):
         task_path = root / "tasks" / name / "task.json"
@@ -682,19 +803,21 @@ def files_under(root: Path) -> dict[str, bytes]:
 
 def check() -> int:
     releases = (
-        ("public-v0.1", CLEAN_V01, GOLD_V01),
-        ("public-v0.2", CLEAN_V02, GOLD_V02),
-        ("public-v0.3", CLEAN_V03, GOLD_V02),
+        ("public-v0.1", CLEAN_V01, GOLD_V01, []),
+        ("public-v0.2", CLEAN_V02, GOLD_V02, []),
+        ("public-v0.3", CLEAN_V03, GOLD_V02, []),
+        ("public-v0.4", CLEAN_V03, GOLD_V04, CLEAN_ADJUDICATIONS_V04),
     )
     failed = False
     with tempfile.TemporaryDirectory(prefix="review-benchmark-check.") as temporary:
-        for release_id, clean_tree, gold in releases:
+        for release_id, clean_tree, gold, clean_adjudications in releases:
             generated = Path(temporary) / release_id
             generate(
                 generated,
                 release_id=release_id,
                 clean_tree=clean_tree,
                 gold=gold,
+                clean_adjudications=clean_adjudications,
             )
             expected = files_under(generated)
             release_root = ROOT / "fixtures" / release_id
@@ -725,9 +848,10 @@ def main() -> int:
         return check()
     generate(
         LATEST_RELEASE_ROOT,
-        release_id="public-v0.3",
+        release_id="public-v0.4",
         clean_tree=CLEAN_V03,
-        gold=GOLD_V02,
+        gold=GOLD_V04,
+        clean_adjudications=CLEAN_ADJUDICATIONS_V04,
     )
     print(f"generated {LATEST_RELEASE_ROOT}")
     return 0

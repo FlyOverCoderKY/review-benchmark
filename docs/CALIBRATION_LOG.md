@@ -54,3 +54,29 @@ is retained for provenance. `public-v0.3` restores both compatibility contracts,
 derives the registry view from the canonical cap table, preserves the existing
 unsupported-year exception type, and adds explicit default, boundary, message,
 registry, report, and invalid-input tests.
+
+## 2026-08-28 — public-v0.3 GLM 5.3 Flash smoke
+
+- Run: [review-runner Actions run 33202852276](https://github.com/FlyOverCoderKY/review-runner/actions/runs/33202852276)
+- Track: fixed OpenRouter review harness
+- Model: `z-ai/glm-5.3-flash`
+- Attempts: one per task (below the three-attempt official minimum)
+- Tool-turn budget: 50
+- Routed provider: Z.AI for both tasks
+- Exact provider-reported cost: $0.006339525 total
+- End-to-end elapsed time: 195,105 ms planted; 220,566 ms clean
+
+The planted task again matched five of six gold findings. It also restated the
+known empty-list defect as missing test coverage, but the v0.3 path constraint
+left that duplicate pending. It emitted two other duplicates. The clean control emitted six comments;
+evidence review classified them as compatibility-policy speculation, unchanged
+base behavior, an out-of-domain extreme, redundant branch coverage, a demand to
+test implementation spelling, and a mistaken claim that importing pytest added
+a new test-runner dependency.
+
+Disposition: this run remains provisional and is not publishable as v0.3 because
+the duplicate and all clean comments were pending. `public-v0.4` broadens the
+empty-list gold matcher to recognize test-path restatements as duplicates and
+records evidence-backed false-positive adjudications for those six clean-control
+comment classes. The source change is unchanged from v0.3, allowing offline
+rescoring without another provider call.
