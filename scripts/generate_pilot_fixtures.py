@@ -1,8 +1,8 @@
-"""Generate the public v0.1 planted/clean calibration family.
+"""Generate the immutable public planted/clean calibration releases.
 
 The same base tree is changed two ways: one deliberately defective and one
-correct. Run without arguments to regenerate committed artifacts, or with
-``--check`` to compare a temporary regeneration with the committed release.
+correct. Run without arguments to generate the latest release, or with
+``--check`` to reproduce and compare every committed release.
 """
 
 from __future__ import annotations
@@ -17,8 +17,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-RELEASE_ROOT = ROOT / "fixtures" / "public-v0.1"
-TASKS_ROOT = RELEASE_ROOT / "tasks"
+LATEST_RELEASE_ROOT = ROOT / "fixtures" / "public-v0.2"
 
 BASE = {
     "calc.py": '''"""Contribution calculations for a small benefits service."""
@@ -121,7 +120,7 @@ def test_2027_report_uses_new_year() -> None:
 ''',
 }
 
-CLEAN = {
+CLEAN_V01 = {
     "calc.py": '''"""Contribution calculations for a small benefits service."""
 
 CAPS = {2026: 8_300, 2027: 8_550}
@@ -198,7 +197,110 @@ def test_2027_report() -> None:
 ''',
 }
 
-GOLD = [
+CLEAN_V02 = {
+    "calc.py": '''"""Contribution calculations for a small benefits service."""
+
+from rules import CAPS
+
+
+def apply_cap(amount: int, year: int) -> int:
+    if year not in CAPS:
+        raise ValueError(f"unsupported year {year}")
+    return min(amount, CAPS[year])
+
+
+def contribution_total(amounts: list[int]) -> int:
+    for amount in amounts:
+        if amount < 0:
+            raise ValueError("amount must be non-negative")
+    return sum(amounts)
+
+
+def average_contribution(amounts: list[int]) -> float:
+    if not amounts:
+        raise ValueError("amounts must not be empty")
+    return contribution_total(amounts) / len(amounts)
+''',
+    "report.py": '''"""Annual report assembly."""
+
+from calc import apply_cap, contribution_total
+
+
+def annual_report(amounts: list[int], year: int) -> dict[str, int]:
+    total = contribution_total(amounts)
+    capped = apply_cap(total, year)
+    return {"year": year, "capped_total": capped}
+''',
+    "rules.py": '''"""Plan-year contribution limits."""
+
+CAPS = {2026: 8_300, 2027: 8_550}
+''',
+    "tests/test_calc.py": '''from calc import apply_cap, average_contribution, contribution_total
+from report import annual_report
+
+
+def test_2026_cap() -> None:
+    assert apply_cap(9_000, 2026) == 8_300
+
+
+def test_2027_cap() -> None:
+    assert apply_cap(9_000, 2027) == 8_550
+
+
+def test_apply_cap_rejects_unsupported_year() -> None:
+    try:
+        apply_cap(9_000, 2028)
+    except ValueError:
+        return
+    raise AssertionError("unsupported year accepted")
+
+
+def test_average_preserves_fractional_result() -> None:
+    assert average_contribution([100, 301]) == 200.5
+
+
+def test_average_rejects_empty() -> None:
+    try:
+        average_contribution([])
+    except ValueError:
+        return
+    raise AssertionError("empty input accepted")
+
+
+def test_negative_amount() -> None:
+    try:
+        contribution_total([100, -1])
+    except ValueError:
+        return
+    raise AssertionError("negative amount accepted")
+
+
+def test_average_rejects_negative_amount() -> None:
+    try:
+        average_contribution([100, -1])
+    except ValueError:
+        return
+    raise AssertionError("negative amount accepted")
+
+
+def test_2026_report() -> None:
+    assert annual_report([9_000], 2026) == {"year": 2026, "capped_total": 8_300}
+
+
+def test_2027_report() -> None:
+    assert annual_report([9_000], 2027) == {"year": 2027, "capped_total": 8_550}
+
+
+def test_report_rejects_unsupported_year() -> None:
+    try:
+        annual_report([9_000], 2028)
+    except ValueError:
+        return
+    raise AssertionError("unsupported year accepted")
+''',
+}
+
+GOLD_V01 = [
     {
         "id": "PM-B1",
         "title": "The 2027 cap repeats the 2026 amount",
@@ -282,6 +384,30 @@ GOLD = [
     },
 ]
 
+GOLD_V02 = [
+    *GOLD_V01,
+    {
+        "id": "PM-B6",
+        "title": "The report test drops its capping assertion",
+        "severity": "risk",
+        "context": "diff",
+        "defect_statement": (
+            "The replacement report test checks only the echoed year and removes the "
+            "base test's capped_total assertion."
+        ),
+        "trigger": "Regress annual_report so it reports an uncapped total for 2027.",
+        "impact": "The report path can stop applying contribution caps without a test failure.",
+        "proof": ["base test_2026_report", "clean twin report tests", "test diff"],
+        "match": {
+            "paths": ["tests/test_calc.py"],
+            "keywords": [
+                "(capped_total|capping).{0,160}(assert|coverage|test|verify)",
+                "(test|assert).{0,160}(only|just).{0,80}year",
+            ],
+        },
+    },
+]
+
 
 def write_tree(root: Path, tree: dict[str, str]) -> None:
     for relative, content in tree.items():
@@ -338,7 +464,14 @@ def write_json(path: Path, payload: object) -> None:
     )
 
 
-def write_task(root: Path, name: str, tree: dict[str, str], *, clean: bool) -> None:
+def write_task(
+    root: Path,
+    name: str,
+    tree: dict[str, str],
+    *,
+    clean: bool,
+    gold: list[dict],
+) -> None:
     task_root = root / "tasks" / name
     checkout = task_root / "checkout"
     if checkout.exists():
@@ -355,7 +488,7 @@ def write_task(root: Path, name: str, tree: dict[str, str], *, clean: bool) -> N
             "schema": "review-benchmark/gold/1",
             "task_id": name,
             "completeness": "synthetic-complete",
-            "findings": [] if clean else GOLD,
+            "findings": [] if clean else gold,
         },
     )
     write_json(
@@ -402,9 +535,15 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def generate(root: Path) -> None:
-    write_task(root, "planted-mini", PLANTED, clean=False)
-    write_task(root, "planted-mini-clean", CLEAN, clean=True)
+def generate(
+    root: Path,
+    *,
+    release_id: str,
+    clean_tree: dict[str, str],
+    gold: list[dict],
+) -> None:
+    write_task(root, "planted-mini", PLANTED, clean=False, gold=gold)
+    write_task(root, "planted-mini-clean", clean_tree, clean=True, gold=gold)
     tasks = []
     for name in ("planted-mini", "planted-mini-clean"):
         task_path = root / "tasks" / name / "task.json"
@@ -419,7 +558,7 @@ def generate(root: Path) -> None:
         root / "MANIFEST.json",
         {
             "schema": "review-benchmark/release/1",
-            "release_id": "public-v0.1",
+            "release_id": release_id,
             "status": "calibration",
             "visibility": "public",
             "generated_with": "scripts/generate_pilot_fixtures.py",
@@ -437,19 +576,39 @@ def files_under(root: Path) -> dict[str, bytes]:
 
 
 def check() -> int:
+    releases = (
+        ("public-v0.1", CLEAN_V01, GOLD_V01),
+        ("public-v0.2", CLEAN_V02, GOLD_V02),
+    )
+    failed = False
     with tempfile.TemporaryDirectory(prefix="review-benchmark-check.") as temporary:
-        generated = Path(temporary) / "public-v0.1"
-        generate(generated)
-        expected = files_under(generated)
-        actual = files_under(RELEASE_ROOT) if RELEASE_ROOT.exists() else {}
-    if expected == actual:
-        print("public-v0.1 fixtures are reproducible")
-        return 0
-    missing = sorted(set(expected) - set(actual))
-    unexpected = sorted(set(actual) - set(expected))
-    changed = sorted(path for path in set(actual) & set(expected) if actual[path] != expected[path])
-    print(f"fixture drift: missing={missing}, unexpected={unexpected}, changed={changed}")
-    return 1
+        for release_id, clean_tree, gold in releases:
+            generated = Path(temporary) / release_id
+            generate(
+                generated,
+                release_id=release_id,
+                clean_tree=clean_tree,
+                gold=gold,
+            )
+            expected = files_under(generated)
+            release_root = ROOT / "fixtures" / release_id
+            actual = files_under(release_root) if release_root.exists() else {}
+            if expected == actual:
+                print(f"{release_id} fixtures are reproducible")
+                continue
+            failed = True
+            missing = sorted(set(expected) - set(actual))
+            unexpected = sorted(set(actual) - set(expected))
+            changed = sorted(
+                path
+                for path in set(actual) & set(expected)
+                if actual[path] != expected[path]
+            )
+            print(
+                f"{release_id} fixture drift: missing={missing}, "
+                f"unexpected={unexpected}, changed={changed}"
+            )
+    return 1 if failed else 0
 
 
 def main() -> int:
@@ -458,8 +617,13 @@ def main() -> int:
     args = parser.parse_args()
     if args.check:
         return check()
-    generate(RELEASE_ROOT)
-    print(f"generated {RELEASE_ROOT}")
+    generate(
+        LATEST_RELEASE_ROOT,
+        release_id="public-v0.2",
+        clean_tree=CLEAN_V02,
+        gold=GOLD_V02,
+    )
+    print(f"generated {LATEST_RELEASE_ROOT}")
     return 0
 
 

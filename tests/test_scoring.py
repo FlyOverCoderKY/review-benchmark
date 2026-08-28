@@ -101,7 +101,7 @@ def test_public_registry_finding_matches_supported_year_gold() -> None:
     task_root = (
         Path(__file__).parents[1]
         / "fixtures"
-        / "public-v0.1"
+        / "public-v0.2"
         / "tasks"
         / "planted-mini"
     )
@@ -123,4 +123,30 @@ def test_public_registry_finding_matches_supported_year_gold() -> None:
     score = score_findings(task, (finding,))
 
     assert score.matched == ((0, "PM-B5"),)
+    assert score.pending == ()
+
+
+def test_public_report_coverage_finding_matches_v02_gold() -> None:
+    task_root = (
+        Path(__file__).parents[1]
+        / "fixtures"
+        / "public-v0.2"
+        / "tasks"
+        / "planted-mini"
+    )
+    task = load_task(task_root)
+    finding = Finding(
+        path="tests/test_calc.py",
+        line=26,
+        severity="risk",
+        title="The replacement report test no longer verifies capping",
+        detail=(
+            "The old test asserted capped_total, but the replacement checks only "
+            "the echoed year and loses coverage of the report's cap calculation."
+        ),
+    )
+
+    score = score_findings(task, (finding,))
+
+    assert score.matched == ((0, "PM-B6"),)
     assert score.pending == ()

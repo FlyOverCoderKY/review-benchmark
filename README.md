@@ -12,15 +12,15 @@ Those results live on separate tracks because they answer different questions.
 
 ## Current status
 
-`v0.1-pilot` is under construction. The public calibration suite and scorer are
+`v0.2-pilot` is under construction. The public calibration suite and scorer are
 usable for harness development, but there is no official leaderboard claim yet.
 
 ## Quick start
 
 ```bash
-python -m review_benchmark validate-release fixtures/public-v0.1
+python -m review_benchmark validate-release fixtures/public-v0.2
 python -m review_benchmark score \
-  fixtures/public-v0.1/tasks/planted-mini \
+  fixtures/public-v0.2/tasks/planted-mini \
   examples/planted-findings.json
 ```
 
@@ -44,7 +44,9 @@ python scripts/generate_pilot_fixtures.py --check
 - Public/private releases and historical result records are immutable.
 - Quality and accuracy lead; latency and cost follow.
 
-See [METHODOLOGY.md](METHODOLOGY.md) and [docs/CONTRIBUTING_TASKS.md](docs/CONTRIBUTING_TASKS.md).
+See [METHODOLOGY.md](METHODOLOGY.md),
+[docs/CALIBRATION_LOG.md](docs/CALIBRATION_LOG.md), and
+[docs/CONTRIBUTING_TASKS.md](docs/CONTRIBUTING_TASKS.md).
 
 ## Repositories
 
