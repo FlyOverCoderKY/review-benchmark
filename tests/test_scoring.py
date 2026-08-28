@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from review_benchmark.models import Adjudication, Finding, GoldFinding, MatchRule, Task
+from review_benchmark.models import (
+    Adjudication,
+    Finding,
+    GoldFinding,
+    MatchRule,
+    Task,
+    load_task,
+)
 from review_benchmark.scoring import score_findings
 
 
@@ -88,3 +95,32 @@ def test_clean_control_score_is_the_finding_count() -> None:
     assert clean.clean is True
     assert noisy.clean is False
     assert noisy.noise_count == 1
+
+
+def test_public_registry_finding_matches_supported_year_gold() -> None:
+    task_root = (
+        Path(__file__).parents[1]
+        / "fixtures"
+        / "public-v0.1"
+        / "tasks"
+        / "planted-mini"
+    )
+    task = load_task(task_root)
+    finding = Finding(
+        path="rules.py",
+        line=3,
+        severity="nit",
+        title=(
+            "rules.py SUPPORTED_YEARS not updated; plan-year registry now "
+            "disagrees with CAPS"
+        ),
+        detail=(
+            "SUPPORTED_YEARS still declares 2026 while this change adds 2027 "
+            "to CAPS, so the two registries diverge."
+        ),
+    )
+
+    score = score_findings(task, (finding,))
+
+    assert score.matched == ((0, "PM-B5"),)
+    assert score.pending == ()

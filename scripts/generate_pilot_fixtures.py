@@ -275,8 +275,8 @@ GOLD = [
         "match": {
             "paths": ["rules.py", "calc.py"],
             "keywords": [
-                "SUPPORTED_YEARS.{0,100}2027",
-                "registry.{0,100}(omit|missing|inconsistent)",
+                "SUPPORTED_YEARS.{0,200}(2027|not updated|disagree|diverge)",
+                "registry.{0,100}(omit|missing|inconsistent|disagree|diverge)",
             ],
         },
     },
