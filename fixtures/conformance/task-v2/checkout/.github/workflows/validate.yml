@@ -1,0 +1,10 @@
+name: Validate conformance fixture
+
+on:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Static public conformance fixture"

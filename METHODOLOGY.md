@@ -13,6 +13,9 @@ to every repository or team preference.
 The evaluation unit is an underlying finding within a review task. Task-macro
 aggregates prevent one dense PR from dominating. Model-in-fixed-harness and
 end-to-end-product results are different tracks and are never directly pooled.
+Multi-axis task metadata supplies overlapping coverage slices only: every unique
+task ID retains one task-macro weight regardless of how many languages,
+frameworks, services, artifacts, tracks, or surfaces tag it.
 
 ## Task and gold construction
 

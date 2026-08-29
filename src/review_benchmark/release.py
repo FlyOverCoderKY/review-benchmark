@@ -35,6 +35,37 @@ class Release:
     manifest: dict[str, object]
 
 
+@dataclass(frozen=True)
+class CoverageSummary:
+    """Coverage membership without changing the one-task/one-weight invariant."""
+
+    task_ids: tuple[str, ...]
+    slice_counts: tuple[tuple[str, int], ...]
+
+    @property
+    def task_count(self) -> int:
+        return len(self.task_ids)
+
+
+def summarize_task_coverage(tasks: tuple[Task, ...]) -> CoverageSummary:
+    """Count overlapping slices while retaining one unique headline task count."""
+
+    task_ids: set[str] = set()
+    slice_members: dict[str, set[str]] = {}
+    for task in tasks:
+        if task.id in task_ids:
+            raise BenchmarkError(f"duplicate task id in coverage summary: {task.id}")
+        task_ids.add(task.id)
+        for tag in task.coverage_tags:
+            slice_members.setdefault(tag, set()).add(task.id)
+    return CoverageSummary(
+        task_ids=tuple(sorted(task_ids)),
+        slice_counts=tuple(
+            (tag, len(members)) for tag, members in sorted(slice_members.items())
+        ),
+    )
+
+
 def load_release(root: Path) -> Release:
     root = root.resolve()
     manifest = _require_dict(_read_json(root / "MANIFEST.json", "release manifest"), "release")

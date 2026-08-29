@@ -1,0 +1,142 @@
+{
+  "schema": "review-benchmark/task/2",
+  "task_id": "task-v2-metadata-conformance",
+  "title": "Public task/2 metadata conformance example",
+  "family_id": "task-v2-metadata-conformance-family",
+  "origin": "clean-control",
+  "visibility": "public",
+  "source": {
+    "kind": "synthetic",
+    "repository": "https://github.com/FlyOverCoderKY/review-benchmark",
+    "license_spdx": "MIT",
+    "purpose": "public task/2 contract conformance"
+  },
+  "files": {
+    "diff": "diff.patch",
+    "checkout": "checkout",
+    "gold": "gold.json"
+  },
+  "context": {
+    "minimum_classes": [],
+    "reviewer_access": [
+      "diff",
+      "checkout"
+    ],
+    "code_execution": false,
+    "network": false
+  },
+  "coverage": {
+    "primary": {
+      "language": "csharp",
+      "ecosystem": "dotnet"
+    },
+    "secondary_languages": [
+      "bicep",
+      "tsql",
+      "yaml"
+    ],
+    "frameworks": [
+      "aspnet-core"
+    ],
+    "libraries": [
+      "azure-identity"
+    ],
+    "data": {
+      "layers": [
+        "entity-framework-core"
+      ],
+      "databases": [
+        "sql-server"
+      ],
+      "providers": [
+        "entity-framework-core-sqlserver"
+      ]
+    },
+    "cloud": [
+      {
+        "provider": "azure",
+        "services": [
+          "app-service",
+          "azure-sql"
+        ]
+      }
+    ],
+    "artifacts": [
+      "iac",
+      "source",
+      "sql",
+      "workflow-configuration"
+    ],
+    "tracks": [
+      "application-review",
+      "stable-platform-configuration"
+    ],
+    "surfaces": [
+      "control-plane",
+      "data-plane",
+      "server"
+    ]
+  },
+  "version_context": {
+    "as_of": "2025-03-01",
+    "components": [
+      {
+        "kind": "runtime",
+        "name": "dotnet",
+        "source": "8.0.11",
+        "target": "9.0.2",
+        "lifecycle": {
+          "source": "supported",
+          "target": "supported",
+          "as_of": "2025-03-01"
+        }
+      },
+      {
+        "kind": "framework",
+        "name": "aspnet-core",
+        "source": "8.0.11",
+        "target": "9.0.2"
+      },
+      {
+        "kind": "sdk",
+        "name": "azure-identity",
+        "source": "1.12.0",
+        "target": "1.13.2"
+      },
+      {
+        "kind": "database",
+        "name": "sql-server",
+        "source": "2022",
+        "target": "2022"
+      },
+      {
+        "kind": "api",
+        "name": "microsoft-sql",
+        "source": "2023-08-01-preview",
+        "target": "2023-08-01-preview"
+      },
+      {
+        "kind": "cli",
+        "name": "dotnet",
+        "source": "8.0.408",
+        "target": "9.0.200"
+      },
+      {
+        "kind": "iac-provider",
+        "name": "azure-resource-manager",
+        "source": "0.31.92",
+        "target": "0.33.93"
+      },
+      {
+        "kind": "lockfile",
+        "name": "packages-lock-json",
+        "source": "1",
+        "target": "1"
+      }
+    ]
+  },
+  "lifecycle": {
+    "state": "active",
+    "as_of": "2025-03-01"
+  }
+}

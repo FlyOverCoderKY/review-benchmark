@@ -17,6 +17,10 @@ Provide:
 7. known clean counterpart or counterevidence; and
 8. any author, maintainer, privacy, or redistribution concern.
 
+New tasks should use the additive
+[task metadata v2 contract](TASK_METADATA_V2.md) when coverage and version
+context are available. Do not migrate a published task/1 manifest in place.
+
 Do not submit secrets, proprietary code, personal data, or a raw review comment as
 if it were complete ground truth. Model-assisted discovery is allowed when it is
 disclosed; human adjudicators still require independent evidence.

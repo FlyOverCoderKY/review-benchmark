@@ -1,0 +1,6 @@
+{
+  "schema": "review-benchmark/gold/1",
+  "task_id": "task-v2-metadata-conformance",
+  "completeness": "synthetic-complete",
+  "findings": []
+}
