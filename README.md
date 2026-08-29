@@ -30,6 +30,7 @@ The package uses only the Python standard library. For development:
 python -m pip install -e . --group dev
 pytest
 python scripts/generate_pilot_fixtures.py --check
+python scripts/generate_semantic_conformance.py --check
 ```
 
 ## Design commitments
@@ -48,7 +49,10 @@ See [METHODOLOGY.md](METHODOLOGY.md),
 [docs/CALIBRATION_LOG.md](docs/CALIBRATION_LOG.md), and
 [docs/CONTRIBUTING_TASKS.md](docs/CONTRIBUTING_TASKS.md). The additive
 [task metadata v2 contract](docs/TASK_METADATA_V2.md) describes multi-axis
-coverage and migration without rewriting task/1 releases.
+coverage and migration without rewriting task/1 releases. The
+[semantic matching conformance protocol](docs/SEMANTIC_MATCHING_CONFORMANCE.md)
+provides a public-safe 60-pair corpus, blinded human-label workflow, and
+assignment-aware matcher evaluation.
 
 ## Repositories
 

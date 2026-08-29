@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bench.flyovercoder.com/schemas/semantic-conformance-evaluation.schema.json",
+  "title": "Semantic Matcher Conformance Evaluation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "corpus_id",
+    "corpus_sha256",
+    "decision_set_id",
+    "label_set_id",
+    "pair_classification",
+    "one_to_one_assignment",
+    "groups"
+  ],
+  "properties": {
+    "schema": {"const": "review-benchmark/semantic-conformance-evaluation/1"},
+    "corpus_id": {"$ref": "#/$defs/id"},
+    "corpus_sha256": {"$ref": "#/$defs/sha256"},
+    "decision_set_id": {"$ref": "#/$defs/id"},
+    "label_set_id": {"$ref": "#/$defs/id"},
+    "pair_classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "true_match",
+        "false_match",
+        "true_no_match",
+        "false_no_match",
+        "insufficient_evidence",
+        "evaluable",
+        "accuracy"
+      ],
+      "properties": {
+        "true_match": {"$ref": "#/$defs/count"},
+        "false_match": {"$ref": "#/$defs/count"},
+        "true_no_match": {"$ref": "#/$defs/count"},
+        "false_no_match": {"$ref": "#/$defs/count"},
+        "insufficient_evidence": {"$ref": "#/$defs/count"},
+        "evaluable": {"$ref": "#/$defs/count"},
+        "accuracy": {"$ref": "#/$defs/ratio"}
+      }
+    },
+    "one_to_one_assignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["human_maximum", "matcher_maximum", "common_maximum", "precision", "recall"],
+      "properties": {
+        "human_maximum": {"$ref": "#/$defs/count"},
+        "matcher_maximum": {"$ref": "#/$defs/count"},
+        "common_maximum": {"$ref": "#/$defs/count"},
+        "precision": {"$ref": "#/$defs/ratio"},
+        "recall": {"$ref": "#/$defs/ratio"}
+      }
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["group_id", "stratum", "human_maximum", "matcher_maximum", "common_maximum"],
+        "properties": {
+          "group_id": {"$ref": "#/$defs/id"},
+          "stratum": {"type": "string", "minLength": 1},
+          "human_maximum": {"$ref": "#/$defs/count"},
+          "matcher_maximum": {"$ref": "#/$defs/count"},
+          "common_maximum": {"$ref": "#/$defs/count"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 100,
+      "pattern": "^[a-z0-9][a-z0-9._-]+$"
+    },
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "count": {"type": "integer", "minimum": 0},
+    "ratio": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+  }
+}

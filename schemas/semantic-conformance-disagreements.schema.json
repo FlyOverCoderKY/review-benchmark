@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bench.flyovercoder.com/schemas/semantic-conformance-disagreements.schema.json",
+  "title": "Semantic Conformance Adjudication Disagreements",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "disagreement_set_id",
+    "corpus_id",
+    "corpus_sha256",
+    "source_label_set_ids",
+    "status",
+    "disagreements"
+  ],
+  "properties": {
+    "schema": {"const": "review-benchmark/semantic-conformance-disagreements/1"},
+    "disagreement_set_id": {"$ref": "#/$defs/id"},
+    "corpus_id": {"$ref": "#/$defs/id"},
+    "corpus_sha256": {"$ref": "#/$defs/sha256"},
+    "source_label_set_ids": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 20,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/id"}
+    },
+    "status": {"enum": ["open", "resolved"]},
+    "disagreements": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pair_id", "decisions", "adjudicated_verdict", "adjudicator_rationale"],
+        "properties": {
+          "pair_id": {"$ref": "#/$defs/id"},
+          "decisions": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 20,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["label_set_id", "verdict", "rationale"],
+              "properties": {
+                "label_set_id": {"$ref": "#/$defs/id"},
+                "verdict": {"enum": ["match", "no-match", "insufficient-evidence"]},
+                "rationale": {"type": "string", "minLength": 1, "maxLength": 2000}
+              }
+            }
+          },
+          "adjudicated_verdict": {
+            "type": ["string", "null"],
+            "enum": ["match", "no-match", "insufficient-evidence", null]
+          },
+          "adjudicator_rationale": {"type": ["string", "null"], "minLength": 1, "maxLength": 2000}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 100,
+      "pattern": "^[a-z0-9][a-z0-9._-]+$"
+    },
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "resolved"}}},
+      "then": {
+        "properties": {
+          "disagreements": {
+            "items": {
+              "properties": {
+                "adjudicated_verdict": {"enum": ["match", "no-match", "insufficient-evidence"]},
+                "adjudicator_rationale": {"type": "string", "minLength": 1, "maxLength": 2000}
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

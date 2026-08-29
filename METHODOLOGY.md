@@ -40,6 +40,11 @@ set is incomplete.
 The current regex-backed matcher is a calibration mechanism, not the final oracle
 for natural real-PR findings. Before an official real-PR release, semantic matching
 will be calibrated against blinded human decisions and a public conformance suite.
+The first unlabeled public suite contains grouped reference/candidate pairs. Two
+independent reviewers label blinded queues, a separate adjudicator resolves only
+their disagreements, and evaluation uses maximum one-to-one assignment for both
+human and matcher edges. Construction strata are coverage metadata, never labels.
+See [Semantic matching conformance](docs/SEMANTIC_MATCHING_CONFORMANCE.md).
 
 ## Metrics and ordering
 

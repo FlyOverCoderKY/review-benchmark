@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bench.flyovercoder.com/schemas/semantic-conformance-corpus.schema.json",
+  "title": "Semantic Matching Conformance Corpus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "corpus_id", "status", "provenance", "groups"],
+  "properties": {
+    "schema": {"const": "review-benchmark/semantic-conformance-corpus/1"},
+    "corpus_id": {"$ref": "#/$defs/id"},
+    "status": {"enum": ["unlabeled", "adjudicating", "adjudicated"]},
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "license_spdx", "contains_private_task_material"],
+      "properties": {
+        "kind": {"enum": ["synthetic", "public-derived"]},
+        "license_spdx": {"type": "string", "minLength": 1, "maxLength": 80},
+        "contains_private_task_material": {"const": false},
+        "generator": {"type": "string", "minLength": 1, "maxLength": 200}
+      }
+    },
+    "groups": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": {"$ref": "#/$defs/group"}
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 100,
+      "pattern": "^[a-z0-9][a-z0-9._-]+$"
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "line", "severity", "title", "detail"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "path": {"type": ["string", "null"], "minLength": 1, "maxLength": 300},
+        "line": {"type": ["integer", "null"], "minimum": 1},
+        "severity": {"enum": ["bug", "risk", "nit"]},
+        "title": {"type": "string", "minLength": 1, "maxLength": 300},
+        "detail": {"type": "string", "minLength": 1, "maxLength": 2000}
+      }
+    },
+    "pair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pair_id", "reference_id", "candidate_id"],
+      "properties": {
+        "pair_id": {"$ref": "#/$defs/id"},
+        "reference_id": {"$ref": "#/$defs/id"},
+        "candidate_id": {"$ref": "#/$defs/id"}
+      }
+    },
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "group_id",
+        "stratum",
+        "reference_findings",
+        "candidate_findings",
+        "pairs"
+      ],
+      "properties": {
+        "group_id": {"$ref": "#/$defs/id"},
+        "stratum": {
+          "enum": [
+            "equivalent-paraphrase",
+            "related-distinct",
+            "unrelated",
+            "duplicate-restatement",
+            "bundled-defects",
+            "right-defect-wrong-location",
+            "partial-trigger-impact",
+            "severity-disagreement",
+            "valid-out-of-diff",
+            "adversarial-keyword-overlap"
+          ]
+        },
+        "reference_findings": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {"$ref": "#/$defs/finding"}
+        },
+        "candidate_findings": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {"$ref": "#/$defs/finding"}
+        },
+        "pairs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": {"$ref": "#/$defs/pair"}
+        }
+      }
+    }
+  }
+}
