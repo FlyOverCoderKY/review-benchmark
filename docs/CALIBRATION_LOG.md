@@ -80,3 +80,32 @@ empty-list gold matcher to recognize test-path restatements as duplicates and
 records evidence-backed false-positive adjudications for those six clean-control
 comment classes. The source change is unchanged from v0.3, allowing offline
 rescoring without another provider call.
+
+## 2026-08-28 — public-v0.4 provider-routing smoke
+
+- Runs: [Together 33226037686](https://github.com/FlyOverCoderKY/review-runner/actions/runs/33226037686)
+  and [Z.AI FP8 33226244692](https://github.com/FlyOverCoderKY/review-runner/actions/runs/33226244692)
+- Track: fixed OpenRouter review harness
+- Model: `z-ai/glm-5.3-flash`
+- Attempts: one per task and provider (below the three-attempt official minimum)
+- Tool-turn budget: 50
+- Exact provider routing: `together` and `z-ai/fp8`
+- Pinned action: v1.2.5 at `2b724b2dac814bfc6695377af0c5fc1b95a1091e`
+- Pinned benchmark: `94eb7d7efd0a97240df5a3bedb8d28a67c555df0`
+
+Both routes matched five of six planted findings, for 0.8333 positive recall.
+Together retained 1.0 macro adjudicated precision and passed the clean control;
+Z.AI had 0.5 macro adjudicated precision and failed the clean control with two
+known false positives. Together had one pending finding and 1.0 severity
+agreement; Z.AI had two pending findings and 0.6 severity agreement.
+
+Together's median end-to-end review time was 110,660 ms and exact
+provider-reported cost was $0.01351319. Z.AI's median was 194,311.5 ms and cost
+was $0.006536675. Both adapters exited successfully and the combined cost was
+$0.020049865, below the $0.10 comparison cap.
+
+Disposition: the exact-provider controls work and the measurements are retained
+as calibration evidence. On this two-task, single-attempt smoke, Together was
+better on quality and speed while Z.AI was cheaper. The sample is far too small
+for a provider ranking or leaderboard claim; a release-scale comparison requires
+independent adjudication and repeated attempts.
