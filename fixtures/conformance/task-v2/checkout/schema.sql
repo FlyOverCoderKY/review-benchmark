@@ -1,0 +1,1 @@
+CREATE TABLE HealthCheck (Id int NOT NULL PRIMARY KEY);

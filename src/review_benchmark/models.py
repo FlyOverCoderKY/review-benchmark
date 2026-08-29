@@ -5,10 +5,15 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-TASK_SCHEMA = "review-benchmark/task/1"
+TASK_SCHEMA_V1 = "review-benchmark/task/1"
+TASK_SCHEMA_V2 = "review-benchmark/task/2"
+# Kept as the task/1 value for callers that imported the original constant.
+TASK_SCHEMA = TASK_SCHEMA_V1
+TASK_SCHEMAS = (TASK_SCHEMA_V1, TASK_SCHEMA_V2)
 GOLD_SCHEMA = "review-benchmark/gold/1"
 ADJUDICATION_SCHEMA = "review-benchmark/adjudications/1"
 FINDINGS_SCHEMA = "review-benchmark/findings/1"
@@ -25,6 +30,13 @@ ORIGINS = (
     "partner-unpublished",
 )
 ADJUDICATION_VERDICTS = ("valid_extra", "false_positive")
+
+_IDENTIFIER_RE = re.compile(r"^[a-z0-9]+(?:[._-][a-z0-9]+)*$")
+_TASK_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,79}$")
+_VERSION_RE = re.compile(
+    r"^(?:[A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9._+:/@<>=~^,* -]*"
+    r"[A-Za-z0-9._+:/@<>=~^,*])$"
+)
 
 
 class BenchmarkError(ValueError):
@@ -47,6 +59,67 @@ def _require_str(value: object, label: str, *, allow_empty: bool = False) -> str
     if not isinstance(value, str) or (not allow_empty and not value.strip()):
         raise BenchmarkError(f"{label} must be a non-empty string")
     return value
+
+
+def _require_keys(
+    value: dict[str, Any],
+    label: str,
+    *,
+    required: set[str],
+    optional: set[str] = frozenset(),
+) -> None:
+    missing = sorted(required - value.keys())
+    if missing:
+        raise BenchmarkError(f"{label} is missing required properties: {missing}")
+    unexpected = sorted(value.keys() - required - optional)
+    if unexpected:
+        raise BenchmarkError(f"{label} has unexpected properties: {unexpected}")
+
+
+def _require_identifier(value: object, label: str) -> str:
+    identifier = _require_str(value, label)
+    if len(identifier) > 80 or _IDENTIFIER_RE.fullmatch(identifier) is None:
+        raise BenchmarkError(
+            f"{label} must be a normalized lower-case identifier of at most 80 characters"
+        )
+    return identifier
+
+
+def _require_identifiers(
+    value: object, label: str, *, min_items: int = 0, max_items: int = 64
+) -> tuple[str, ...]:
+    items = _require_list(value, label)
+    if len(items) < min_items:
+        raise BenchmarkError(f"{label} must contain at least {min_items} entries")
+    if len(items) > max_items:
+        raise BenchmarkError(f"{label} must contain at most {max_items} entries")
+    identifiers = tuple(
+        _require_identifier(item, f"{label}[{index}]")
+        for index, item in enumerate(items)
+    )
+    if len(identifiers) != len(set(identifiers)):
+        raise BenchmarkError(f"{label} must not contain duplicate entries")
+    return identifiers
+
+
+def _require_date(value: object, label: str) -> date:
+    raw = _require_str(value, label)
+    try:
+        parsed = date.fromisoformat(raw)
+    except ValueError as exc:
+        raise BenchmarkError(f"{label} must be a valid YYYY-MM-DD date") from exc
+    if parsed.isoformat() != raw:
+        raise BenchmarkError(f"{label} must be a normalized YYYY-MM-DD date")
+    return parsed
+
+
+def _require_version(value: object, label: str) -> str:
+    version = _require_str(value, label)
+    if len(version) > 128 or _VERSION_RE.fullmatch(version) is None:
+        raise BenchmarkError(
+            f"{label} must be a normalized version string of at most 128 characters"
+        )
+    return version
 
 
 def _read_json(path: Path, label: str) -> object:
@@ -205,6 +278,253 @@ class Adjudication:
 
 
 @dataclass(frozen=True)
+class PrimaryCoverage:
+    language: str
+    ecosystem: str
+
+    @classmethod
+    def from_dict(cls, value: object, *, label: str) -> PrimaryCoverage:
+        item = _require_dict(value, label)
+        _require_keys(item, label, required={"language", "ecosystem"})
+        return cls(
+            language=_require_identifier(item.get("language"), f"{label}.language"),
+            ecosystem=_require_identifier(item.get("ecosystem"), f"{label}.ecosystem"),
+        )
+
+
+@dataclass(frozen=True)
+class DataCoverage:
+    layers: tuple[str, ...]
+    databases: tuple[str, ...]
+    providers: tuple[str, ...]
+
+    @classmethod
+    def from_dict(cls, value: object, *, label: str) -> DataCoverage:
+        item = _require_dict(value, label)
+        _require_keys(item, label, required={"layers", "databases", "providers"})
+        return cls(
+            layers=_require_identifiers(item.get("layers"), f"{label}.layers"),
+            databases=_require_identifiers(item.get("databases"), f"{label}.databases"),
+            providers=_require_identifiers(item.get("providers"), f"{label}.providers"),
+        )
+
+
+@dataclass(frozen=True)
+class CloudCoverage:
+    provider: str
+    services: tuple[str, ...]
+
+    @classmethod
+    def from_dict(cls, value: object, *, label: str) -> CloudCoverage:
+        item = _require_dict(value, label)
+        _require_keys(item, label, required={"provider", "services"})
+        return cls(
+            provider=_require_identifier(item.get("provider"), f"{label}.provider"),
+            services=_require_identifiers(item.get("services"), f"{label}.services"),
+        )
+
+
+@dataclass(frozen=True)
+class TaskCoverage:
+    primary: PrimaryCoverage
+    secondary_languages: tuple[str, ...]
+    frameworks: tuple[str, ...]
+    libraries: tuple[str, ...]
+    data: DataCoverage
+    cloud: tuple[CloudCoverage, ...]
+    artifacts: tuple[str, ...]
+    tracks: tuple[str, ...]
+    surfaces: tuple[str, ...]
+
+    @classmethod
+    def from_dict(cls, value: object, *, label: str = "task.coverage") -> TaskCoverage:
+        item = _require_dict(value, label)
+        _require_keys(
+            item,
+            label,
+            required={
+                "primary",
+                "secondary_languages",
+                "frameworks",
+                "libraries",
+                "data",
+                "cloud",
+                "artifacts",
+                "tracks",
+                "surfaces",
+            },
+        )
+        cloud_items = _require_list(item.get("cloud"), f"{label}.cloud")
+        if len(cloud_items) > 16:
+            raise BenchmarkError(f"{label}.cloud must contain at most 16 entries")
+        cloud = tuple(
+            CloudCoverage.from_dict(entry, label=f"{label}.cloud[{index}]")
+            for index, entry in enumerate(cloud_items)
+        )
+        providers = [entry.provider for entry in cloud]
+        if len(providers) != len(set(providers)):
+            raise BenchmarkError(f"{label}.cloud must contain each provider at most once")
+        primary = PrimaryCoverage.from_dict(item.get("primary"), label=f"{label}.primary")
+        secondary_languages = _require_identifiers(
+            item.get("secondary_languages"),
+            f"{label}.secondary_languages",
+            max_items=16,
+        )
+        if primary.language in secondary_languages:
+            raise BenchmarkError(
+                f"{label}.secondary_languages must not repeat the primary language"
+            )
+        return cls(
+            primary=primary,
+            secondary_languages=secondary_languages,
+            frameworks=_require_identifiers(item.get("frameworks"), f"{label}.frameworks"),
+            libraries=_require_identifiers(item.get("libraries"), f"{label}.libraries"),
+            data=DataCoverage.from_dict(item.get("data"), label=f"{label}.data"),
+            cloud=cloud,
+            artifacts=_require_identifiers(
+                item.get("artifacts"), f"{label}.artifacts", min_items=1
+            ),
+            tracks=_require_identifiers(
+                item.get("tracks"), f"{label}.tracks", min_items=1
+            ),
+            surfaces=_require_identifiers(item.get("surfaces"), f"{label}.surfaces"),
+        )
+
+    def tags(self) -> tuple[str, ...]:
+        """Return deterministic, namespaced slice tags; never task weights."""
+        tags = {
+            f"primary-language:{self.primary.language}",
+            f"primary-ecosystem:{self.primary.ecosystem}",
+        }
+        tags.update(f"secondary-language:{value}" for value in self.secondary_languages)
+        tags.update(f"framework:{value}" for value in self.frameworks)
+        tags.update(f"library:{value}" for value in self.libraries)
+        tags.update(f"data-layer:{value}" for value in self.data.layers)
+        tags.update(f"database:{value}" for value in self.data.databases)
+        tags.update(f"data-provider:{value}" for value in self.data.providers)
+        for cloud in self.cloud:
+            tags.add(f"cloud-provider:{cloud.provider}")
+            tags.update(
+                f"cloud-service:{cloud.provider}/{service}" for service in cloud.services
+            )
+        tags.update(f"artifact:{value}" for value in self.artifacts)
+        tags.update(f"track:{value}" for value in self.tracks)
+        tags.update(f"surface:{value}" for value in self.surfaces)
+        return tuple(sorted(tags))
+
+
+@dataclass(frozen=True)
+class Lifecycle:
+    state: str
+    as_of: date
+
+    @classmethod
+    def from_dict(cls, value: object, *, label: str) -> Lifecycle:
+        item = _require_dict(value, label)
+        _require_keys(item, label, required={"state", "as_of"})
+        return cls(
+            state=_require_identifier(item.get("state"), f"{label}.state"),
+            as_of=_require_date(item.get("as_of"), f"{label}.as_of"),
+        )
+
+
+@dataclass(frozen=True)
+class VersionLifecycle:
+    source: str | None
+    target: str | None
+    as_of: date
+
+    @classmethod
+    def from_dict(cls, value: object, *, label: str) -> VersionLifecycle:
+        item = _require_dict(value, label)
+        _require_keys(
+            item,
+            label,
+            required={"as_of"},
+            optional={"source", "target"},
+        )
+        source_raw = item.get("source")
+        target_raw = item.get("target")
+        if source_raw is None and target_raw is None:
+            raise BenchmarkError(f"{label} must define source or target state")
+        return cls(
+            source=(
+                None
+                if source_raw is None
+                else _require_identifier(source_raw, f"{label}.source")
+            ),
+            target=(
+                None
+                if target_raw is None
+                else _require_identifier(target_raw, f"{label}.target")
+            ),
+            as_of=_require_date(item.get("as_of"), f"{label}.as_of"),
+        )
+
+
+@dataclass(frozen=True)
+class VersionComponent:
+    kind: str
+    name: str
+    source: str
+    target: str
+    lifecycle: VersionLifecycle | None
+
+    @classmethod
+    def from_dict(cls, value: object, *, label: str) -> VersionComponent:
+        item = _require_dict(value, label)
+        _require_keys(
+            item,
+            label,
+            required={"kind", "name", "source", "target"},
+            optional={"lifecycle"},
+        )
+        lifecycle_raw = item.get("lifecycle")
+        return cls(
+            kind=_require_identifier(item.get("kind"), f"{label}.kind"),
+            name=_require_identifier(item.get("name"), f"{label}.name"),
+            source=_require_version(item.get("source"), f"{label}.source"),
+            target=_require_version(item.get("target"), f"{label}.target"),
+            lifecycle=(
+                None
+                if lifecycle_raw is None
+                else VersionLifecycle.from_dict(lifecycle_raw, label=f"{label}.lifecycle")
+            ),
+        )
+
+
+@dataclass(frozen=True)
+class VersionContext:
+    as_of: date
+    components: tuple[VersionComponent, ...]
+
+    @classmethod
+    def from_dict(
+        cls, value: object, *, label: str = "task.version_context"
+    ) -> VersionContext:
+        item = _require_dict(value, label)
+        _require_keys(item, label, required={"as_of", "components"})
+        raw_components = _require_list(item.get("components"), f"{label}.components")
+        if not raw_components:
+            raise BenchmarkError(f"{label}.components must contain at least 1 entry")
+        if len(raw_components) > 64:
+            raise BenchmarkError(f"{label}.components must contain at most 64 entries")
+        components = tuple(
+            VersionComponent.from_dict(entry, label=f"{label}.components[{index}]")
+            for index, entry in enumerate(raw_components)
+        )
+        identities = [(entry.kind, entry.name) for entry in components]
+        if len(identities) != len(set(identities)):
+            raise BenchmarkError(
+                f"{label}.components must contain each kind/name pair at most once"
+            )
+        return cls(
+            as_of=_require_date(item.get("as_of"), f"{label}.as_of"),
+            components=components,
+        )
+
+
+@dataclass(frozen=True)
 class Task:
     root: Path
     id: str
@@ -218,6 +538,16 @@ class Task:
     gold: tuple[GoldFinding, ...]
     adjudications: tuple[Adjudication, ...]
     manifest: dict[str, Any]
+    schema: str = TASK_SCHEMA_V1
+    coverage: TaskCoverage | None = None
+    version_context: VersionContext | None = None
+    lifecycle: Lifecycle | None = None
+
+    @property
+    def coverage_tags(self) -> tuple[str, ...]:
+        if self.coverage is None:
+            return (f"primary-language:{self.language}",)
+        return self.coverage.tags()
 
 
 def load_findings(path: Path, *, expected_task_id: str | None = None) -> tuple[Finding, ...]:
@@ -241,9 +571,38 @@ def load_findings(path: Path, *, expected_task_id: str | None = None) -> tuple[F
 def load_task(root: Path) -> Task:
     root = root.resolve()
     manifest = _require_dict(_read_json(root / "task.json", "task manifest"), "task")
-    if manifest.get("schema") != TASK_SCHEMA:
-        raise BenchmarkError(f"task.schema must be {TASK_SCHEMA!r}")
+    task_schema = manifest.get("schema")
+    if task_schema not in TASK_SCHEMAS:
+        raise BenchmarkError(f"task.schema must be one of {TASK_SCHEMAS}")
+    if task_schema == TASK_SCHEMA_V2:
+        _require_keys(
+            manifest,
+            "task",
+            required={
+                "schema",
+                "task_id",
+                "title",
+                "family_id",
+                "origin",
+                "visibility",
+                "source",
+                "files",
+                "context",
+                "coverage",
+                "version_context",
+                "lifecycle",
+            },
+        )
     task_id = _require_str(manifest.get("task_id"), "task.task_id")
+    if task_schema == TASK_SCHEMA_V2 and _TASK_ID_RE.fullmatch(task_id) is None:
+        raise BenchmarkError("task.task_id must be a normalized task identifier")
+    title = _require_str(manifest.get("title"), "task.title")
+    family_id = _require_str(manifest.get("family_id"), "task.family_id")
+    if task_schema == TASK_SCHEMA_V2:
+        if len(title) > 200:
+            raise BenchmarkError("task.title must contain at most 200 characters")
+        if len(family_id) > 80:
+            raise BenchmarkError("task.family_id must contain at most 80 characters")
     origin = _require_str(manifest.get("origin"), "task.origin")
     if origin not in ORIGINS:
         raise BenchmarkError(f"task.origin must be one of {ORIGINS}")
@@ -251,6 +610,15 @@ def load_task(root: Path) -> Task:
     if visibility not in {"public", "private"}:
         raise BenchmarkError("task.visibility must be 'public' or 'private'")
     files = _require_dict(manifest.get("files"), "task.files")
+    if task_schema == TASK_SCHEMA_V2:
+        _require_keys(
+            files,
+            "task.files",
+            required={"diff", "checkout", "gold"},
+            optional={"adjudications"},
+        )
+        _require_dict(manifest.get("source"), "task.source")
+        _require_dict(manifest.get("context"), "task.context")
     diff_rel = normalize_relative_path(files.get("diff"), "task.files.diff")
     checkout_rel = normalize_relative_path(files.get("checkout"), "task.files.checkout")
     gold_rel = normalize_relative_path(files.get("gold"), "task.files.gold")
@@ -301,17 +669,32 @@ def load_task(root: Path) -> Task:
         if len(ids) != len(set(ids)):
             raise BenchmarkError("adjudication ids must be unique")
 
+    coverage: TaskCoverage | None = None
+    version_context: VersionContext | None = None
+    lifecycle: Lifecycle | None = None
+    if task_schema == TASK_SCHEMA_V2:
+        coverage = TaskCoverage.from_dict(manifest.get("coverage"))
+        version_context = VersionContext.from_dict(manifest.get("version_context"))
+        lifecycle = Lifecycle.from_dict(manifest.get("lifecycle"), label="task.lifecycle")
+        language = coverage.primary.language
+    else:
+        language = _require_str(manifest.get("language"), "task.language")
+
     return Task(
         root=root,
         id=task_id,
-        title=_require_str(manifest.get("title"), "task.title"),
-        family_id=_require_str(manifest.get("family_id"), "task.family_id"),
+        title=title,
+        family_id=family_id,
         origin=origin,
-        language=_require_str(manifest.get("language"), "task.language"),
+        language=language,
         visibility=visibility,
         diff_path=diff_path,
         checkout_path=checkout_path,
         gold=gold,
         adjudications=adjudications,
         manifest=manifest,
+        schema=task_schema,
+        coverage=coverage,
+        version_context=version_context,
+        lifecycle=lifecycle,
     )

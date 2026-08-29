@@ -46,7 +46,9 @@ python scripts/generate_pilot_fixtures.py --check
 
 See [METHODOLOGY.md](METHODOLOGY.md),
 [docs/CALIBRATION_LOG.md](docs/CALIBRATION_LOG.md), and
-[docs/CONTRIBUTING_TASKS.md](docs/CONTRIBUTING_TASKS.md).
+[docs/CONTRIBUTING_TASKS.md](docs/CONTRIBUTING_TASKS.md). The additive
+[task metadata v2 contract](docs/TASK_METADATA_V2.md) describes multi-axis
+coverage and migration without rewriting task/1 releases.
 
 ## Repositories
 
