@@ -1,0 +1,1765 @@
+{
+  "corpus_id": "semantic-conformance-v0.1",
+  "groups": [
+    {
+      "candidate_findings": [
+        {
+          "detail": "Because tenant_id is not included in the WHERE clause, a request can return records owned by another tenant.",
+          "id": "c002",
+          "line": 20,
+          "path": "src/orders.sql",
+          "severity": "bug",
+          "title": "Cross-tenant rows can leak"
+        }
+      ],
+      "group_id": "g001",
+      "pairs": [
+        {
+          "candidate_id": "c002",
+          "pair_id": "p001",
+          "reference_id": "r001"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The query no longer restricts rows to the active tenant, exposing other tenants' records.",
+          "id": "r001",
+          "line": 10,
+          "path": "src/orders.sql",
+          "severity": "bug",
+          "title": "Tenant filter is omitted"
+        }
+      ],
+      "stratum": "equivalent-paraphrase"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The loop never consumes the continuation token, so only the first batch of objects is processed.",
+          "id": "c004",
+          "line": 20,
+          "path": "src/storage.ts",
+          "severity": "bug",
+          "title": "Object traversal is truncated"
+        }
+      ],
+      "group_id": "g002",
+      "pairs": [
+        {
+          "candidate_id": "c004",
+          "pair_id": "p002",
+          "reference_id": "r003"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The storage listing ignores next_page_token and silently drops objects after page one.",
+          "id": "r003",
+          "line": 10,
+          "path": "src/storage.ts",
+          "severity": "bug",
+          "title": "Pagination stops after the first page"
+        }
+      ],
+      "stratum": "equivalent-paraphrase"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "setCount(count + 1) runs from a captured render value; a functional update is required to preserve newer increments.",
+          "id": "c006",
+          "line": 20,
+          "path": "src/Counter.tsx",
+          "severity": "bug",
+          "title": "Timer update uses an obsolete count"
+        }
+      ],
+      "group_id": "g003",
+      "pairs": [
+        {
+          "candidate_id": "c006",
+          "pair_id": "p003",
+          "reference_id": "r005"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The delayed callback captures the old count and loses intervening increments.",
+          "id": "r005",
+          "line": 10,
+          "path": "src/Counter.tsx",
+          "severity": "bug",
+          "title": "Stale closure overwrites newer state"
+        }
+      ],
+      "stratum": "equivalent-paraphrase"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "A NULL returned by the NOT IN subquery makes every comparison unknown, so eligible rows disappear.",
+          "id": "c008",
+          "line": 20,
+          "path": "db/report.sql",
+          "severity": "bug",
+          "title": "Nullable exclusion list empties the result"
+        }
+      ],
+      "group_id": "g004",
+      "pairs": [
+        {
+          "candidate_id": "c008",
+          "pair_id": "p004",
+          "reference_id": "r007"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "SQL three-valued logic makes the predicate unknown for all candidates when a NULL appears.",
+          "id": "r007",
+          "line": 10,
+          "path": "db/report.sql",
+          "severity": "bug",
+          "title": "NOT IN rejects every row when the subquery contains NULL"
+        }
+      ],
+      "stratum": "equivalent-paraphrase"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The focused link's outline extends beyond the card and is hidden by the new overflow rule.",
+          "id": "c010",
+          "line": 20,
+          "path": "src/card.css",
+          "severity": "risk",
+          "title": "Keyboard focus indicator is not visible"
+        }
+      ],
+      "group_id": "g005",
+      "pairs": [
+        {
+          "candidate_id": "c010",
+          "pair_id": "p005",
+          "reference_id": "r009"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "overflow: hidden on the card cuts off the keyboard focus outline.",
+          "id": "r009",
+          "line": 10,
+          "path": "src/card.css",
+          "severity": "risk",
+          "title": "Focus ring is clipped"
+        }
+      ],
+      "stratum": "equivalent-paraphrase"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The audit insert runs after commit and cannot roll back the state change when it fails.",
+          "id": "c012",
+          "line": 20,
+          "path": "src/account.cs",
+          "severity": "bug",
+          "title": "Commit can succeed without its audit row"
+        }
+      ],
+      "group_id": "g006",
+      "pairs": [
+        {
+          "candidate_id": "c012",
+          "pair_id": "p006",
+          "reference_id": "r011"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The transaction commits before the audit record is inserted, so audit failure leaves an untracked update.",
+          "id": "r011",
+          "line": 10,
+          "path": "src/account.cs",
+          "severity": "bug",
+          "title": "Audit write is outside the transaction"
+        }
+      ],
+      "stratum": "equivalent-paraphrase"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "Expired access tokens remain in the process cache and can be reused after their expiry.",
+          "id": "c014",
+          "line": 20,
+          "path": "src/auth.ts",
+          "severity": "bug",
+          "title": "Token cache ignores expiration"
+        }
+      ],
+      "group_id": "g007",
+      "pairs": [
+        {
+          "candidate_id": "c014",
+          "pair_id": "p007",
+          "reference_id": "r013"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The endpoint accepts a valid token without requiring the invoices.write scope.",
+          "id": "r013",
+          "line": 10,
+          "path": "src/auth.ts",
+          "severity": "bug",
+          "title": "Authorization scope is not checked"
+        }
+      ],
+      "stratum": "related-distinct"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "Accessing the navigation property inside the loop creates an N+1 query pattern.",
+          "id": "c016",
+          "line": 20,
+          "path": "src/Orders.cs",
+          "severity": "risk",
+          "title": "Loop issues one query per row"
+        }
+      ],
+      "group_id": "g008",
+      "pairs": [
+        {
+          "candidate_id": "c016",
+          "pair_id": "p008",
+          "reference_id": "r015"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "A read-only query omits AsNoTracking and grows the change tracker.",
+          "id": "r015",
+          "line": 10,
+          "path": "src/Orders.cs",
+          "severity": "risk",
+          "title": "Query materializes tracked entities"
+        }
+      ],
+      "stratum": "related-distinct"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The effect registers a window listener but its cleanup does not remove it.",
+          "id": "c018",
+          "line": 20,
+          "path": "src/Profile.tsx",
+          "severity": "bug",
+          "title": "Component leaks a resize listener"
+        }
+      ],
+      "group_id": "g009",
+      "pairs": [
+        {
+          "candidate_id": "c018",
+          "pair_id": "p009",
+          "reference_id": "r017"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Random IDs generated during render cause a hydration mismatch.",
+          "id": "r017",
+          "line": 10,
+          "path": "src/Profile.tsx",
+          "severity": "bug",
+          "title": "Server and client render different IDs"
+        }
+      ],
+      "stratum": "related-distinct"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The workload identity is never granted secret read access.",
+          "id": "c020",
+          "line": 20,
+          "path": "infra/main.tf",
+          "severity": "bug",
+          "title": "Role lacks permission to read the secret"
+        }
+      ],
+      "group_id": "g010",
+      "pairs": [
+        {
+          "candidate_id": "c020",
+          "pair_id": "p010",
+          "reference_id": "r019"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The hard-coded endpoint fails in sovereign cloud partitions.",
+          "id": "r019",
+          "line": 10,
+          "path": "infra/main.tf",
+          "severity": "bug",
+          "title": "Deployment assumes the commercial-cloud endpoint"
+        }
+      ],
+      "stratum": "related-distinct"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The new reset removes outline without supplying an alternate focus indicator.",
+          "id": "c022",
+          "line": 20,
+          "path": "src/dialog.css",
+          "severity": "risk",
+          "title": "Button has no visible keyboard focus"
+        }
+      ],
+      "group_id": "g011",
+      "pairs": [
+        {
+          "candidate_id": "c022",
+          "pair_id": "p011",
+          "reference_id": "r021"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The overlay's stacking context covers the button and receives pointer events.",
+          "id": "r021",
+          "line": 10,
+          "path": "src/dialog.css",
+          "severity": "risk",
+          "title": "Overlay intercepts button clicks"
+        }
+      ],
+      "stratum": "related-distinct"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "A timeout followed by retry can create the order twice because no idempotency key is sent.",
+          "id": "c024",
+          "line": 20,
+          "path": "src/client.py",
+          "severity": "risk",
+          "title": "Retried create request is not idempotent"
+        }
+      ],
+      "group_id": "g012",
+      "pairs": [
+        {
+          "candidate_id": "c024",
+          "pair_id": "p012",
+          "reference_id": "r023"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Every client retries on the same exponential schedule, amplifying a thundering herd.",
+          "id": "r023",
+          "line": 10,
+          "path": "src/client.py",
+          "severity": "risk",
+          "title": "Retries synchronize without jitter"
+        }
+      ],
+      "stratum": "related-distinct"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The worker join has no timeout and can block process termination.",
+          "id": "c026",
+          "line": 20,
+          "path": "src/worker.py",
+          "severity": "bug",
+          "title": "Shutdown waits forever for a worker"
+        }
+      ],
+      "group_id": "g013",
+      "pairs": [
+        {
+          "candidate_id": "c026",
+          "pair_id": "p013",
+          "reference_id": "r025"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Localized responses collide because locale is absent from the cache key.",
+          "id": "r025",
+          "line": 10,
+          "path": "src/cache.py",
+          "severity": "bug",
+          "title": "Cache key omits locale"
+        }
+      ],
+      "stratum": "unrelated"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The authentication failure log serializes the supplied password.",
+          "id": "c028",
+          "line": 20,
+          "path": "src/login.go",
+          "severity": "bug",
+          "title": "Password log entry is not redacted"
+        }
+      ],
+      "group_id": "g014",
+      "pairs": [
+        {
+          "candidate_id": "c028",
+          "pair_id": "p014",
+          "reference_id": "r027"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Splitting input by line before parsing corrupts quoted multiline cells.",
+          "id": "r027",
+          "line": 10,
+          "path": "src/importer.go",
+          "severity": "bug",
+          "title": "CSV parser drops quoted newlines"
+        }
+      ],
+      "stratum": "unrelated"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The early return skips disposing the connection.",
+          "id": "c030",
+          "line": 20,
+          "path": "src/repository.rs",
+          "severity": "bug",
+          "title": "Database connection is not returned to the pool"
+        }
+      ],
+      "group_id": "g015",
+      "pairs": [
+        {
+          "candidate_id": "c030",
+          "pair_id": "p015",
+          "reference_id": "r029"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "A zero source width reaches the scale calculation.",
+          "id": "r029",
+          "line": 10,
+          "path": "src/image.rs",
+          "severity": "bug",
+          "title": "Image width can divide by zero"
+        }
+      ],
+      "stratum": "unrelated"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "Fixed columns are wider than the narrow viewport.",
+          "id": "c032",
+          "line": 20,
+          "path": "src/layout.css",
+          "severity": "bug",
+          "title": "CSS grid overflows at 320 pixels"
+        }
+      ],
+      "group_id": "g016",
+      "pairs": [
+        {
+          "candidate_id": "c032",
+          "pair_id": "p016",
+          "reference_id": "r031"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Canonicalizing decoded JSON changes the signed bytes.",
+          "id": "r031",
+          "line": 10,
+          "path": "src/webhook.js",
+          "severity": "bug",
+          "title": "Webhook signature compares decoded text"
+        }
+      ],
+      "stratum": "unrelated"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The French bundle does not contain the newly referenced heading.",
+          "id": "c034",
+          "line": 20,
+          "path": "locales/fr.json",
+          "severity": "bug",
+          "title": "Translation key is missing"
+        }
+      ],
+      "group_id": "g017",
+      "pairs": [
+        {
+          "candidate_id": "c034",
+          "pair_id": "p017",
+          "reference_id": "r033"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Clock changes can move the renewal deadline backward.",
+          "id": "r033",
+          "line": 10,
+          "path": "src/lease.cs",
+          "severity": "bug",
+          "title": "Lease renewal uses local time"
+        }
+      ],
+      "stratum": "unrelated"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The deployment probes 8081 while the container listens on 8080.",
+          "id": "c036",
+          "line": 20,
+          "path": "deploy/app.yaml",
+          "severity": "bug",
+          "title": "Health probe uses the wrong port"
+        }
+      ],
+      "group_id": "g018",
+      "pairs": [
+        {
+          "candidate_id": "c036",
+          "pair_id": "p018",
+          "reference_id": "r035"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "An entry containing ../ can escape the destination directory.",
+          "id": "r035",
+          "line": 10,
+          "path": "src/archive.java",
+          "severity": "bug",
+          "title": "Archive extraction permits traversal"
+        }
+      ],
+      "stratum": "unrelated"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The report uses the default year because the call omits the requested year.",
+          "id": "c038",
+          "line": 20,
+          "path": "src/calc.py",
+          "severity": "bug",
+          "title": "Requested year is not forwarded"
+        }
+      ],
+      "group_id": "g019",
+      "pairs": [
+        {
+          "candidate_id": "c038",
+          "pair_id": "p019",
+          "reference_id": "r037"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "annual_report calls apply_cap without its year argument.",
+          "id": "r037",
+          "line": 10,
+          "path": "src/report.py",
+          "severity": "bug",
+          "title": "Requested year is not forwarded"
+        }
+      ],
+      "stratum": "right-defect-wrong-location"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "Only the first page is consumed because the response token is ignored.",
+          "id": "c040",
+          "line": 20,
+          "path": "src/types.ts",
+          "severity": "bug",
+          "title": "Continuation token is discarded"
+        }
+      ],
+      "group_id": "g020",
+      "pairs": [
+        {
+          "candidate_id": "c040",
+          "pair_id": "p020",
+          "reference_id": "r039"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The list loop never assigns the response token for its next request.",
+          "id": "r039",
+          "line": 10,
+          "path": "src/list.ts",
+          "severity": "bug",
+          "title": "Continuation token is discarded"
+        }
+      ],
+      "stratum": "right-defect-wrong-location"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The new cascade removes historical invoices with the customer.",
+          "id": "c042",
+          "line": 20,
+          "path": "src/customer.cs",
+          "severity": "bug",
+          "title": "Deleting a customer now deletes invoices"
+        }
+      ],
+      "group_id": "g021",
+      "pairs": [
+        {
+          "candidate_id": "c042",
+          "pair_id": "p021",
+          "reference_id": "r041"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The migration changes the invoice relation to ON DELETE CASCADE.",
+          "id": "r041",
+          "line": 10,
+          "path": "db/0042_customer.sql",
+          "severity": "bug",
+          "title": "Foreign key cascade deletes invoices"
+        }
+      ],
+      "stratum": "right-defect-wrong-location"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The request is not rerun when accountId changes.",
+          "id": "c044",
+          "line": 20,
+          "path": "src/api.ts",
+          "severity": "bug",
+          "title": "Account changes use stale data"
+        }
+      ],
+      "group_id": "g022",
+      "pairs": [
+        {
+          "candidate_id": "c044",
+          "pair_id": "p022",
+          "reference_id": "r043"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The effect keeps loading the previous account after the prop changes.",
+          "id": "r043",
+          "line": 10,
+          "path": "src/Account.tsx",
+          "severity": "bug",
+          "title": "Effect misses accountId dependency"
+        }
+      ],
+      "stratum": "right-defect-wrong-location"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The policy tests a different resource tag name than the bucket defines.",
+          "id": "c046",
+          "line": 20,
+          "path": "infra/bucket.tf",
+          "severity": "bug",
+          "title": "Tagged bucket access is always denied"
+        }
+      ],
+      "group_id": "g023",
+      "pairs": [
+        {
+          "candidate_id": "c046",
+          "pair_id": "p023",
+          "reference_id": "r045"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The condition can never match the tag supplied on the bucket.",
+          "id": "r045",
+          "line": 10,
+          "path": "infra/policy.tf",
+          "severity": "bug",
+          "title": "IAM condition uses the wrong resource tag key"
+        }
+      ],
+      "stratum": "right-defect-wrong-location"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The container's overflow prevents the open menu from being visible.",
+          "id": "c048",
+          "line": 20,
+          "path": "src/Menu.tsx",
+          "severity": "risk",
+          "title": "Dropdown content is clipped"
+        }
+      ],
+      "group_id": "g024",
+      "pairs": [
+        {
+          "candidate_id": "c048",
+          "pair_id": "p024",
+          "reference_id": "r047"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The menu extends outside its container and is hidden by overflow: hidden.",
+          "id": "r047",
+          "line": 10,
+          "path": "src/Menu.css",
+          "severity": "risk",
+          "title": "New overflow clips the menu"
+        }
+      ],
+      "stratum": "right-defect-wrong-location"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "There is no check for an empty list.",
+          "id": "c050",
+          "line": 20,
+          "path": "src/stats.py",
+          "severity": "risk",
+          "title": "Missing empty guard"
+        }
+      ],
+      "group_id": "g025",
+      "pairs": [
+        {
+          "candidate_id": "c050",
+          "pair_id": "p025",
+          "reference_id": "r049"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Calling average([]) divides the sum by zero and raises unexpectedly.",
+          "id": "r049",
+          "line": 10,
+          "path": "src/stats.py",
+          "severity": "risk",
+          "title": "Empty average divides by zero"
+        }
+      ],
+      "stratum": "partial-trigger-impact"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The new normalization may cause collisions.",
+          "id": "c052",
+          "line": 20,
+          "path": "src/id.cs",
+          "severity": "risk",
+          "title": "Identifier normalization is risky"
+        }
+      ],
+      "group_id": "g026",
+      "pairs": [
+        {
+          "candidate_id": "c052",
+          "pair_id": "p026",
+          "reference_id": "r051"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "On a case-insensitive store, creating IDs Foo and foo overwrites the first record.",
+          "id": "r051",
+          "line": 10,
+          "path": "src/id.cs",
+          "severity": "risk",
+          "title": "Case-insensitive IDs collide"
+        }
+      ],
+      "stratum": "partial-trigger-impact"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The payment request does not set one.",
+          "id": "c054",
+          "line": 20,
+          "path": "src/payment.ts",
+          "severity": "bug",
+          "title": "Retry has no idempotency key"
+        }
+      ],
+      "group_id": "g027",
+      "pairs": [
+        {
+          "candidate_id": "c054",
+          "pair_id": "p027",
+          "reference_id": "r053"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "When the first response is lost, retrying without an idempotency key charges twice.",
+          "id": "r053",
+          "line": 10,
+          "path": "src/payment.ts",
+          "severity": "bug",
+          "title": "Retry duplicates payments"
+        }
+      ],
+      "stratum": "partial-trigger-impact"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The formatter no longer includes fractional seconds.",
+          "id": "c056",
+          "line": 20,
+          "path": "src/events.go",
+          "severity": "risk",
+          "title": "Timestamp precision changed"
+        }
+      ],
+      "group_id": "g028",
+      "pairs": [
+        {
+          "candidate_id": "c056",
+          "pair_id": "p028",
+          "reference_id": "r055"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Serializing timestamps to whole seconds reorders events created within the same second.",
+          "id": "r055",
+          "line": 10,
+          "path": "src/events.go",
+          "severity": "risk",
+          "title": "Fractional seconds are truncated"
+        }
+      ],
+      "stratum": "partial-trigger-impact"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "No focus call is made after opening.",
+          "id": "c058",
+          "line": 20,
+          "path": "src/Modal.tsx",
+          "severity": "risk",
+          "title": "Modal does not move focus"
+        }
+      ],
+      "group_id": "g029",
+      "pairs": [
+        {
+          "candidate_id": "c058",
+          "pair_id": "p029",
+          "reference_id": "r057"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Opening the modal leaves keyboard focus on an inert background control.",
+          "id": "r057",
+          "line": 10,
+          "path": "src/Modal.tsx",
+          "severity": "risk",
+          "title": "Focus is trapped behind the modal"
+        }
+      ],
+      "stratum": "partial-trigger-impact"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The image tag is mutable.",
+          "id": "c060",
+          "line": 20,
+          "path": "deploy/app.yaml",
+          "severity": "risk",
+          "title": "Deployment uses latest"
+        }
+      ],
+      "group_id": "g030",
+      "pairs": [
+        {
+          "candidate_id": "c060",
+          "pair_id": "p030",
+          "reference_id": "r059"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The mutable latest tag is overwritten, so a failed rollout has no pinned prior digest.",
+          "id": "r059",
+          "line": 10,
+          "path": "deploy/app.yaml",
+          "severity": "risk",
+          "title": "Rollback cannot restore the previous image"
+        }
+      ],
+      "stratum": "partial-trigger-impact"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "Authentication failures serialize the raw credential.",
+          "id": "c062",
+          "line": 20,
+          "path": "src/auth.py",
+          "severity": "nit",
+          "title": "Debug log may include a password"
+        }
+      ],
+      "group_id": "g031",
+      "pairs": [
+        {
+          "candidate_id": "c062",
+          "pair_id": "p031",
+          "reference_id": "r061"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The failure path records the plaintext password.",
+          "id": "r061",
+          "line": 10,
+          "path": "src/auth.py",
+          "severity": "bug",
+          "title": "Password is written to logs"
+        }
+      ],
+      "stratum": "severity-disagreement"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The WHERE clause no longer restricts rows to the current tenant.",
+          "id": "c064",
+          "line": 20,
+          "path": "db/orders.sql",
+          "severity": "risk",
+          "title": "Tenant filter should be restored"
+        }
+      ],
+      "group_id": "g032",
+      "pairs": [
+        {
+          "candidate_id": "c064",
+          "pair_id": "p032",
+          "reference_id": "r063"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The query returns records from every tenant.",
+          "id": "r063",
+          "line": 10,
+          "path": "db/orders.sql",
+          "severity": "bug",
+          "title": "Missing tenant predicate leaks data"
+        }
+      ],
+      "stratum": "severity-disagreement"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The command can remove the live deployment directory.",
+          "id": "c066",
+          "line": 20,
+          "path": "scripts/deploy.ps1",
+          "severity": "nit",
+          "title": "Cleanup path seems dangerous"
+        }
+      ],
+      "group_id": "g033",
+      "pairs": [
+        {
+          "candidate_id": "c066",
+          "pair_id": "p033",
+          "reference_id": "r065"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The resolved cleanup target points at the current deployment.",
+          "id": "r065",
+          "line": 10,
+          "path": "scripts/deploy.ps1",
+          "severity": "bug",
+          "title": "Cleanup deletes the active directory"
+        }
+      ],
+      "stratum": "severity-disagreement"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "An empty list reaches a zero denominator.",
+          "id": "c068",
+          "line": 20,
+          "path": "src/stats.py",
+          "severity": "bug",
+          "title": "Average needs an empty-input guard"
+        }
+      ],
+      "group_id": "g034",
+      "pairs": [
+        {
+          "candidate_id": "c068",
+          "pair_id": "p034",
+          "reference_id": "r067"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The new average divides by len(items) without guarding zero.",
+          "id": "r067",
+          "line": 10,
+          "path": "src/stats.py",
+          "severity": "risk",
+          "title": "Empty input raises ZeroDivisionError"
+        }
+      ],
+      "stratum": "severity-disagreement"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "outline: none has no replacement style.",
+          "id": "c070",
+          "line": 20,
+          "path": "src/button.css",
+          "severity": "nit",
+          "title": "Outline removal hurts keyboard navigation"
+        }
+      ],
+      "group_id": "g035",
+      "pairs": [
+        {
+          "candidate_id": "c070",
+          "pair_id": "p035",
+          "reference_id": "r069"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Keyboard users cannot see which button is focused.",
+          "id": "r069",
+          "line": 10,
+          "path": "src/button.css",
+          "severity": "risk",
+          "title": "Button focus indicator is removed"
+        }
+      ],
+      "stratum": "severity-disagreement"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "There is no attempt or deadline check in the retry loop.",
+          "id": "c072",
+          "line": 20,
+          "path": "src/provider.go",
+          "severity": "risk",
+          "title": "Retries can continue forever"
+        }
+      ],
+      "group_id": "g036",
+      "pairs": [
+        {
+          "candidate_id": "c072",
+          "pair_id": "p036",
+          "reference_id": "r071"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "A persistent provider failure keeps the request alive forever.",
+          "id": "r071",
+          "line": 10,
+          "path": "src/provider.go",
+          "severity": "bug",
+          "title": "Retry loop has no upper bound"
+        }
+      ],
+      "stratum": "severity-disagreement"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The unchanged registry file does not include the year added by this patch.",
+          "id": "c074",
+          "line": 20,
+          "path": "src/rules.py",
+          "severity": "risk",
+          "title": "Supported-year registry is stale"
+        }
+      ],
+      "group_id": "g037",
+      "pairs": [
+        {
+          "candidate_id": "c074",
+          "pair_id": "p037",
+          "reference_id": "r073"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The changed cap table adds 2028 while the repository registry still lists through 2027.",
+          "id": "r073",
+          "line": 10,
+          "path": "src/rules.py",
+          "severity": "risk",
+          "title": "Registry omits the new plan year"
+        }
+      ],
+      "stratum": "valid-out-of-diff"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The consumer's unchanged 1 MiB limit is below the producer's new 4 MiB payload.",
+          "id": "c076",
+          "line": 20,
+          "path": "src/consumer.cs",
+          "severity": "risk",
+          "title": "Consumer rejects the new message size"
+        }
+      ],
+      "group_id": "g038",
+      "pairs": [
+        {
+          "candidate_id": "c076",
+          "pair_id": "p038",
+          "reference_id": "r075"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The producer now emits 4 MiB messages but the unchanged consumer rejects anything above 1 MiB.",
+          "id": "r075",
+          "line": 10,
+          "path": "src/consumer.cs",
+          "severity": "risk",
+          "title": "Changed producer exceeds the consumer limit"
+        }
+      ],
+      "stratum": "valid-out-of-diff"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "Router ordering sends the new literal path to the id handler.",
+          "id": "c078",
+          "line": 20,
+          "path": "src/routes.ts",
+          "severity": "bug",
+          "title": "Existing parameter route shadows /users/me"
+        }
+      ],
+      "group_id": "g039",
+      "pairs": [
+        {
+          "candidate_id": "c078",
+          "pair_id": "p039",
+          "reference_id": "r077"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The new /users/me route is captured by the unchanged /users/{id} route first.",
+          "id": "r077",
+          "line": 10,
+          "path": "src/routes.ts",
+          "severity": "bug",
+          "title": "Route conflicts with the existing wildcard"
+        }
+      ],
+      "stratum": "valid-out-of-diff"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The unchanged schema only allows 32 characters while this change emits 64.",
+          "id": "c080",
+          "line": 20,
+          "path": "db/schema.sql",
+          "severity": "bug",
+          "title": "Database column truncates new identifiers"
+        }
+      ],
+      "group_id": "g040",
+      "pairs": [
+        {
+          "candidate_id": "c080",
+          "pair_id": "p040",
+          "reference_id": "r079"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The new 64-character identifiers are stored in an unchanged varchar(32) column.",
+          "id": "r079",
+          "line": 10,
+          "path": "db/schema.sql",
+          "severity": "bug",
+          "title": "Migration exceeds an old column width"
+        }
+      ],
+      "stratum": "valid-out-of-diff"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The new policy prevents the unchanged analytics worker from loading.",
+          "id": "c082",
+          "line": 20,
+          "path": "src/analytics.js",
+          "severity": "risk",
+          "title": "Existing worker host is missing from CSP"
+        }
+      ],
+      "group_id": "g041",
+      "pairs": [
+        {
+          "candidate_id": "c082",
+          "pair_id": "p041",
+          "reference_id": "r081"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The worker is loaded from a host absent from the new worker-src directive.",
+          "id": "r081",
+          "line": 10,
+          "path": "src/analytics.js",
+          "severity": "risk",
+          "title": "New CSP blocks the existing worker"
+        }
+      ],
+      "stratum": "valid-out-of-diff"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The Dockerfile remains on runtime 8 while the project now targets 9.",
+          "id": "c084",
+          "line": 20,
+          "path": "Dockerfile",
+          "severity": "bug",
+          "title": "Container cannot launch the new target runtime"
+        }
+      ],
+      "group_id": "g042",
+      "pairs": [
+        {
+          "candidate_id": "c084",
+          "pair_id": "p042",
+          "reference_id": "r083"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The project targets runtime 9 but the unchanged container still installs runtime 8 only.",
+          "id": "r083",
+          "line": 10,
+          "path": "Dockerfile",
+          "severity": "bug",
+          "title": "New runtime is unsupported by the deployment image"
+        }
+      ],
+      "stratum": "valid-out-of-diff"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The query applies tenant_id twice, which is redundant but does not broaden deletion.",
+          "id": "c086",
+          "line": 20,
+          "path": "db/delete.sql",
+          "severity": "bug",
+          "title": "Tenant predicate is duplicated"
+        }
+      ],
+      "group_id": "g043",
+      "pairs": [
+        {
+          "candidate_id": "c086",
+          "pair_id": "p043",
+          "reference_id": "r085"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Deleting one tenant's record can remove matching IDs in other tenants.",
+          "id": "r085",
+          "line": 10,
+          "path": "db/delete.sql",
+          "severity": "bug",
+          "title": "Tenant predicate is omitted from the delete"
+        }
+      ],
+      "stratum": "adversarial-keyword-overlap"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The metric increments both before and after a retry; payment execution remains idempotent.",
+          "id": "c088",
+          "line": 20,
+          "path": "src/payment.ts",
+          "severity": "bug",
+          "title": "Duplicate retry metrics are emitted"
+        }
+      ],
+      "group_id": "g044",
+      "pairs": [
+        {
+          "candidate_id": "c088",
+          "pair_id": "p044",
+          "reference_id": "r087"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The retried POST has no idempotency key and can charge twice.",
+          "id": "r087",
+          "line": 10,
+          "path": "src/payment.ts",
+          "severity": "bug",
+          "title": "Retry duplicates a payment"
+        }
+      ],
+      "stratum": "adversarial-keyword-overlap"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The serializer suppresses null properties, changing the response shape.",
+          "id": "c090",
+          "line": 20,
+          "path": "src/json.cs",
+          "severity": "bug",
+          "title": "NULL values are omitted from the JSON result"
+        }
+      ],
+      "group_id": "g045",
+      "pairs": [
+        {
+          "candidate_id": "c090",
+          "pair_id": "p045",
+          "reference_id": "r089"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "A nullable subquery makes every NOT IN comparison unknown.",
+          "id": "r089",
+          "line": 10,
+          "path": "db/query.sql",
+          "severity": "bug",
+          "title": "NULL in NOT IN empties the result"
+        }
+      ],
+      "stratum": "adversarial-keyword-overlap"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "A long label wraps and increases the tab stop's height; its outline remains visible.",
+          "id": "c092",
+          "line": 20,
+          "path": "src/card.css",
+          "severity": "bug",
+          "title": "Overflow text receives focus"
+        }
+      ],
+      "group_id": "g046",
+      "pairs": [
+        {
+          "candidate_id": "c092",
+          "pair_id": "p046",
+          "reference_id": "r091"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The keyboard indicator extends beyond a hidden-overflow container.",
+          "id": "r091",
+          "line": 10,
+          "path": "src/card.css",
+          "severity": "bug",
+          "title": "Focus outline is clipped by overflow"
+        }
+      ],
+      "stratum": "adversarial-keyword-overlap"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The access-token refresh path continues the request with a new credential.",
+          "id": "c094",
+          "line": 20,
+          "path": "src/auth.ts",
+          "severity": "bug",
+          "title": "Token continuation refreshes authentication"
+        }
+      ],
+      "group_id": "g047",
+      "pairs": [
+        {
+          "candidate_id": "c094",
+          "pair_id": "p047",
+          "reference_id": "r093"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Object listing ends after the first page.",
+          "id": "r093",
+          "line": 10,
+          "path": "src/list.ts",
+          "severity": "bug",
+          "title": "Continuation token is never consumed"
+        }
+      ],
+      "stratum": "adversarial-keyword-overlap"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "A post-hydration formatter intentionally rounds display values to minutes.",
+          "id": "c096",
+          "line": 20,
+          "path": "src/Clock.tsx",
+          "severity": "bug",
+          "title": "Timestamp precision is reduced after hydration"
+        }
+      ],
+      "group_id": "g048",
+      "pairs": [
+        {
+          "candidate_id": "c096",
+          "pair_id": "p048",
+          "reference_id": "r095"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Server and client call the clock independently while rendering.",
+          "id": "r095",
+          "line": 10,
+          "path": "src/Clock.tsx",
+          "severity": "bug",
+          "title": "Hydration renders a different timestamp"
+        }
+      ],
+      "stratum": "adversarial-keyword-overlap"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "contribution_total now accepts negative elements.",
+          "id": "c098",
+          "line": 20,
+          "path": "src/calc.py",
+          "severity": "bug",
+          "title": "Negative-input guard was removed"
+        },
+        {
+          "detail": "A negative contribution silently lowers the result.",
+          "id": "c099",
+          "line": 21,
+          "path": "tests/test_calc.py",
+          "severity": "risk",
+          "title": "Missing validation permits negative totals"
+        }
+      ],
+      "group_id": "g049",
+      "pairs": [
+        {
+          "candidate_id": "c098",
+          "pair_id": "p049",
+          "reference_id": "r097"
+        },
+        {
+          "candidate_id": "c099",
+          "pair_id": "p050",
+          "reference_id": "r097"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Removing validation lets negative contributions reduce the total.",
+          "id": "r097",
+          "line": 10,
+          "path": "src/calc.py",
+          "severity": "bug",
+          "title": "Negative values are accepted"
+        }
+      ],
+      "stratum": "duplicate-restatement"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The loop ignores nextPageToken.",
+          "id": "c101",
+          "line": 20,
+          "path": "src/list.go",
+          "severity": "bug",
+          "title": "Only the first object page is processed"
+        },
+        {
+          "detail": "No second list request is made with the continuation token.",
+          "id": "c102",
+          "line": 21,
+          "path": "tests/list_test.go",
+          "severity": "risk",
+          "title": "Large buckets are truncated"
+        }
+      ],
+      "group_id": "g050",
+      "pairs": [
+        {
+          "candidate_id": "c101",
+          "pair_id": "p051",
+          "reference_id": "r100"
+        },
+        {
+          "candidate_id": "c102",
+          "pair_id": "p052",
+          "reference_id": "r100"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The response continuation token is not consumed.",
+          "id": "r100",
+          "line": 10,
+          "path": "src/list.go",
+          "severity": "bug",
+          "title": "Listing stops at one page"
+        }
+      ],
+      "stratum": "duplicate-restatement"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "The glyph-only control lacks aria-label text.",
+          "id": "c104",
+          "line": 20,
+          "path": "src/IconButton.tsx",
+          "severity": "risk",
+          "title": "Screen readers announce an unnamed button"
+        },
+        {
+          "detail": "The rendered button exposes an empty accessible name.",
+          "id": "c105",
+          "line": 21,
+          "path": "tests/IconButton.test.tsx",
+          "severity": "nit",
+          "title": "Accessibility coverage misses the unnamed control"
+        }
+      ],
+      "group_id": "g051",
+      "pairs": [
+        {
+          "candidate_id": "c104",
+          "pair_id": "p053",
+          "reference_id": "r103"
+        },
+        {
+          "candidate_id": "c105",
+          "pair_id": "p054",
+          "reference_id": "r103"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The visible glyph supplies no name to assistive technology.",
+          "id": "r103",
+          "line": 10,
+          "path": "src/IconButton.tsx",
+          "severity": "risk",
+          "title": "Icon button has no accessible name"
+        }
+      ],
+      "stratum": "duplicate-restatement"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "Retries lack both an idempotency key and an overall deadline.",
+          "id": "c108",
+          "line": 20,
+          "path": "src/pay.ts",
+          "severity": "bug",
+          "title": "Payment retries are unsafe and unbounded"
+        }
+      ],
+      "group_id": "g052",
+      "pairs": [
+        {
+          "candidate_id": "c108",
+          "pair_id": "p055",
+          "reference_id": "r106"
+        },
+        {
+          "candidate_id": "c108",
+          "pair_id": "p056",
+          "reference_id": "r107"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "The payment POST has no idempotency key.",
+          "id": "r106",
+          "line": 10,
+          "path": "src/pay.ts",
+          "severity": "bug",
+          "title": "Retry can charge twice"
+        },
+        {
+          "detail": "Persistent failure can keep the request open forever.",
+          "id": "r107",
+          "line": 11,
+          "path": "src/pay.ts",
+          "severity": "risk",
+          "title": "Retry loop has no deadline"
+        }
+      ],
+      "stratum": "bundled-defects"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "Opening leaves focus behind the dialog and closing does not return it to the trigger.",
+          "id": "c111",
+          "line": 20,
+          "path": "src/Modal.tsx",
+          "severity": "risk",
+          "title": "Modal focus lifecycle is broken"
+        }
+      ],
+      "group_id": "g053",
+      "pairs": [
+        {
+          "candidate_id": "c111",
+          "pair_id": "p057",
+          "reference_id": "r109"
+        },
+        {
+          "candidate_id": "c111",
+          "pair_id": "p058",
+          "reference_id": "r110"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Keyboard focus remains behind the modal.",
+          "id": "r109",
+          "line": 10,
+          "path": "src/Modal.tsx",
+          "severity": "risk",
+          "title": "Modal does not move focus"
+        },
+        {
+          "detail": "Closing the modal loses the invoking control.",
+          "id": "r110",
+          "line": 11,
+          "path": "src/Modal.tsx",
+          "severity": "risk",
+          "title": "Modal does not restore focus"
+        }
+      ],
+      "stratum": "bundled-defects"
+    },
+    {
+      "candidate_findings": [
+        {
+          "detail": "It adds a delete cascade and its down path does not restore the old constraint.",
+          "id": "c114",
+          "line": 20,
+          "path": "db/migrate.sql",
+          "severity": "bug",
+          "title": "Invoice migration is destructive and irreversible"
+        }
+      ],
+      "group_id": "g054",
+      "pairs": [
+        {
+          "candidate_id": "c114",
+          "pair_id": "p059",
+          "reference_id": "r112"
+        },
+        {
+          "candidate_id": "c114",
+          "pair_id": "p060",
+          "reference_id": "r113"
+        }
+      ],
+      "reference_findings": [
+        {
+          "detail": "Deleting a customer now removes invoices.",
+          "id": "r112",
+          "line": 10,
+          "path": "db/migrate.sql",
+          "severity": "bug",
+          "title": "Migration cascades invoice deletion"
+        },
+        {
+          "detail": "The down migration does not restore the prior foreign key.",
+          "id": "r113",
+          "line": 11,
+          "path": "db/migrate.sql",
+          "severity": "risk",
+          "title": "Migration cannot roll back"
+        }
+      ],
+      "stratum": "bundled-defects"
+    }
+  ],
+  "provenance": {
+    "contains_private_task_material": false,
+    "generator": "scripts/generate_semantic_conformance.py",
+    "kind": "synthetic",
+    "license_spdx": "MIT"
+  },
+  "schema": "review-benchmark/semantic-conformance-corpus/1",
+  "status": "unlabeled"
+}
