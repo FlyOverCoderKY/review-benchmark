@@ -7,7 +7,12 @@ import json
 import sys
 from pathlib import Path
 
-from review_benchmark.models import BenchmarkError, load_findings, load_task
+from review_benchmark.models import BenchmarkError, _json_loads, load_findings, load_task
+from review_benchmark.public_results import (
+    load_public_result,
+    load_result_registry,
+    validate_registry_against_git_base,
+)
 from review_benchmark.release import load_release
 from review_benchmark.scoring import score_findings
 from review_benchmark.semantic_conformance import (
@@ -39,7 +44,9 @@ def _validate_task(args: argparse.Namespace) -> int:
 
 
 def _validate_release(args: argparse.Namespace) -> int:
-    release = load_release(Path(args.release))
+    release = load_release(
+        Path(args.release), require_official_contract=args.authoritative
+    )
     _json_dump(
         {
             "valid": True,
@@ -63,6 +70,40 @@ def _score(args: argparse.Namespace) -> int:
             json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
     _json_dump(payload)
+    return 0
+
+
+def _validate_result(args: argparse.Namespace) -> int:
+    result = load_public_result(Path(args.result))
+    _json_dump(
+        {
+            "valid": True,
+            "record_id": result.record_id,
+            "status": result.status,
+            "track": result.track,
+        }
+    )
+    return 0
+
+
+def _validate_result_registry(args: argparse.Namespace) -> int:
+    registry_path = Path(args.registry)
+    registry = load_result_registry(registry_path)
+    if args.base_ref:
+        validate_registry_against_git_base(registry_path, args.base_ref)
+    superseded = {record.supersedes for record in registry.records if record.supersedes}
+    _json_dump(
+        {
+            "valid": True,
+            "record_count": len(registry.records),
+            "active_count": sum(
+                record.record_id not in superseded
+                and record.result.status in {"official", "reproduced"}
+                for record in registry.records
+            ),
+            "base_compared": bool(args.base_ref),
+        }
+    )
     return 0
 
 
@@ -93,7 +134,11 @@ def _semantic_disagreements(args: argparse.Namespace) -> int:
 def _semantic_adjudicate(args: argparse.Namespace) -> int:
     corpus = load_corpus(Path(args.corpus))
     labels = tuple(load_labels(Path(path), corpus, require_complete=True) for path in args.labels)
-    disagreements = json.loads(Path(args.disagreements).read_text(encoding="utf-8"))
+    disagreements_path = Path(args.disagreements)
+    disagreements = _json_loads(
+        disagreements_path.read_text(encoding="utf-8"),
+        f"semantic disagreements {disagreements_path}",
+    )
     payload = build_adjudicated_labels(
         corpus,
         labels,
@@ -125,12 +170,25 @@ def build_parser() -> argparse.ArgumentParser:
     validate_task.set_defaults(handler=_validate_task)
     validate_release = sub.add_parser("validate-release", help="validate an immutable release")
     validate_release.add_argument("release")
+    validate_release.add_argument("--authoritative", action="store_true")
     validate_release.set_defaults(handler=_validate_release)
     score = sub.add_parser("score", help="score normalized findings offline")
     score.add_argument("task")
     score.add_argument("findings")
     score.add_argument("--out", default="")
     score.set_defaults(handler=_score)
+    validate_result = sub.add_parser(
+        "validate-result", help="validate one strict public result record"
+    )
+    validate_result.add_argument("result")
+    validate_result.set_defaults(handler=_validate_result)
+    validate_registry = sub.add_parser(
+        "validate-result-registry",
+        help="validate the immutable public result registry",
+    )
+    validate_registry.add_argument("registry")
+    validate_registry.add_argument("--base-ref", default="")
+    validate_registry.set_defaults(handler=_validate_result_registry)
     semantic_blind = sub.add_parser(
         "semantic-blind", help="create an unlabeled, stratum-blinded human review queue"
     )

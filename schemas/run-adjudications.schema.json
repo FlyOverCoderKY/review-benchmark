@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bench.flyovercoder.com/schemas/run-adjudications.schema.json",
+  "title": "Immutable Two-Reviewer Run Adjudications",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "adjudication_id",
+    "status",
+    "run",
+    "pending_set_sha256",
+    "reviewers",
+    "decisions",
+    "document_sha256"
+  ],
+  "properties": {
+    "schema": {"const": "review-benchmark/run-adjudications/1"},
+    "adjudication_id": {"$ref": "#/$defs/id"},
+    "status": {"const": "complete"},
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "manifest_sha256",
+        "private_score_sha256",
+        "config_sha256",
+        "release_id",
+        "release_git_sha",
+        "release_manifest_sha256",
+        "scorer_git_sha",
+        "scorer_version"
+      ],
+      "properties": {
+        "run_id": {"type": "string", "minLength": 1, "maxLength": 200},
+        "manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "private_score_sha256": {"$ref": "#/$defs/sha256"},
+        "config_sha256": {"$ref": "#/$defs/sha256"},
+        "release_id": {"type": "string", "minLength": 1, "maxLength": 200},
+        "release_git_sha": {"$ref": "#/$defs/git_sha"},
+        "release_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "scorer_git_sha": {"$ref": "#/$defs/git_sha"},
+        "scorer_version": {"type": "string", "minLength": 1, "maxLength": 200}
+      }
+    },
+    "pending_set_sha256": {"$ref": "#/$defs/sha256"},
+    "reviewers": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/id"}
+    },
+    "decisions": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {"$ref": "#/$defs/decision"}
+    },
+    "document_sha256": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 100,
+      "pattern": "^[a-z0-9][a-z0-9._-]+$"
+    },
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "git_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reviewer_id", "verdict", "reason", "response_sha256"],
+      "properties": {
+        "reviewer_id": {"$ref": "#/$defs/id"},
+        "verdict": {
+          "enum": [
+            "valid_extra",
+            "false_positive",
+            "oracle_gap",
+            "insufficient_evidence"
+          ]
+        },
+        "reason": {"type": "string", "minLength": 1, "maxLength": 4000},
+        "response_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "finding",
+        "reviews",
+        "resolution"
+      ],
+      "properties": {
+        "finding": {"$ref": "#/$defs/finding_binding"},
+        "reviews": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/review"}
+        },
+        "resolution": {
+          "enum": [
+            "valid_extra",
+            "false_positive",
+            "oracle_gap",
+            "insufficient_evidence",
+            "disagreement"
+          ]
+        }
+      }
+    },
+    "finding_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "finding_id",
+        "task_id",
+        "attempt_id",
+        "normalized_attempt_sha256",
+        "finding_index",
+        "finding_sha256"
+      ],
+      "properties": {
+        "finding_id": {"$ref": "#/$defs/sha256"},
+        "task_id": {"type": "string", "minLength": 1, "maxLength": 200},
+        "attempt_id": {"type": "string", "minLength": 1, "maxLength": 200},
+        "normalized_attempt_sha256": {"$ref": "#/$defs/sha256"},
+        "finding_index": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+        "finding_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

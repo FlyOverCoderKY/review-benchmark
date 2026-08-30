@@ -19,6 +19,7 @@ usable for harness development, but there is no official leaderboard claim yet.
 
 ```bash
 python -m review_benchmark validate-release fixtures/public-v0.4
+python -m review_benchmark validate-result-registry results/registry.json
 python -m review_benchmark score \
   fixtures/public-v0.4/tasks/planted-mini \
   examples/planted-findings.json
@@ -32,6 +33,11 @@ pytest
 python scripts/generate_pilot_fixtures.py --check
 python scripts/generate_semantic_conformance.py --check
 ```
+
+Official releases use the content-addressed `release/2` contract. Published run
+records use the exact `public-result/2` contract and enter the append-only
+`results/registry.json` authority only after validation. See
+[publication contracts](docs/PUBLICATION_CONTRACTS.md).
 
 ## Design commitments
 

@@ -5,26 +5,29 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import math
+import re
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-from review_benchmark.models import BenchmarkError
+from review_benchmark.models import BenchmarkError, _json_loads
 
 CORPUS_SCHEMA = "review-benchmark/semantic-conformance-corpus/1"
 LABELS_SCHEMA = "review-benchmark/semantic-conformance-labels/1"
 DECISIONS_SCHEMA = "review-benchmark/semantic-matcher-decisions/1"
+DECISIONS_SCHEMA_V2 = "review-benchmark/semantic-matcher-decisions/2"
 DISAGREEMENTS_SCHEMA = "review-benchmark/semantic-conformance-disagreements/1"
 EVALUATION_SCHEMA = "review-benchmark/semantic-conformance-evaluation/1"
+EVALUATION_SCHEMA_V2 = "review-benchmark/semantic-conformance-evaluation/2"
+_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,99}$")
 
 
 def _read_object(path: Path, label: str) -> dict[str, Any]:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except OSError as exc:
+        value = _json_loads(path.read_text(encoding="utf-8"), f"{label} {path}")
+    except (OSError, UnicodeError) as exc:
         raise BenchmarkError(f"cannot read {label} {path}: {exc}") from exc
-    except json.JSONDecodeError as exc:
-        raise BenchmarkError(f"invalid JSON in {label} {path}: {exc}") from exc
     if not isinstance(value, dict):
         raise BenchmarkError(f"{label} must be a JSON object")
     return value
@@ -40,6 +43,20 @@ def _require_string(value: object, label: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise BenchmarkError(f"{label} must be a non-empty string")
     return value
+
+
+def _require_id(value: object, label: str) -> str:
+    result = _require_string(value, label)
+    if _ID_RE.fullmatch(result) is None:
+        raise BenchmarkError(f"{label} must be a normalized identifier")
+    return result
+
+
+def _bounded_string(value: object, label: str, maximum: int) -> str:
+    result = _require_string(value, label)
+    if len(result) > maximum:
+        raise BenchmarkError(f"{label} must contain at most {maximum} characters")
+    return result
 
 
 def _unique(items: Iterable[str], label: str) -> tuple[str, ...]:
@@ -239,23 +256,92 @@ def load_labels(
 
 
 def _decision_verdicts(decisions: dict[str, Any], corpus: dict[str, Any]) -> dict[str, str]:
-    if decisions.get("schema") != DECISIONS_SCHEMA:
-        raise BenchmarkError(f"decisions.schema must be {DECISIONS_SCHEMA!r}")
+    schema = decisions.get("schema")
+    if schema not in {DECISIONS_SCHEMA, DECISIONS_SCHEMA_V2}:
+        raise BenchmarkError(
+            f"decisions.schema must be one of {(DECISIONS_SCHEMA, DECISIONS_SCHEMA_V2)}"
+        )
+    if schema == DECISIONS_SCHEMA:
+        if decisions.get("corpus_id") != corpus["corpus_id"]:
+            raise BenchmarkError("decisions.corpus_id does not match corpus")
+        if decisions.get("corpus_sha256") != corpus_sha256(corpus):
+            raise BenchmarkError("decisions.corpus_sha256 does not match corpus")
+        expected = _corpus_pairs(corpus)
+        actual: dict[str, str] = {}
+        for item in _require_list(decisions.get("decisions"), "decisions.decisions"):
+            if not isinstance(item, dict):
+                raise BenchmarkError("matcher decision must be a JSON object")
+            pair_id = _require_string(item.get("pair_id"), "matcher decision pair_id")
+            verdict = item.get("verdict")
+            if verdict not in {"match", "no-match"}:
+                raise BenchmarkError(f"invalid matcher verdict for pair {pair_id!r}")
+            if pair_id in actual:
+                raise BenchmarkError(
+                    f"matcher decisions contain duplicate pair id {pair_id!r}"
+                )
+            actual[pair_id] = verdict
+        if set(actual) != set(expected):
+            missing = sorted(set(expected) - set(actual))
+            extra = sorted(set(actual) - set(expected))
+            raise BenchmarkError(
+                f"matcher pair set mismatch: missing={missing}, extra={extra}"
+            )
+        return actual
+
+    expected_top = {
+        "schema",
+        "decision_set_id",
+        "corpus_id",
+        "corpus_sha256",
+        "matcher",
+        "decisions",
+    }
+    if set(decisions) != expected_top:
+        raise BenchmarkError("decisions must contain exactly the documented top-level fields")
     if decisions.get("corpus_id") != corpus["corpus_id"]:
         raise BenchmarkError("decisions.corpus_id does not match corpus")
     if decisions.get("corpus_sha256") != corpus_sha256(corpus):
         raise BenchmarkError("decisions.corpus_sha256 does not match corpus")
     expected = _corpus_pairs(corpus)
     actual: dict[str, str] = {}
+    _require_id(decisions.get("decision_set_id"), "decisions.decision_set_id")
+    _require_id(decisions.get("corpus_id"), "decisions.corpus_id")
+    matcher = decisions.get("matcher")
+    if not isinstance(matcher, dict) or set(matcher) != {"name", "version"}:
+        raise BenchmarkError("decisions.matcher must contain exactly name and version")
+    _bounded_string(matcher.get("name"), "decisions.matcher.name", 200)
+    _bounded_string(matcher.get("version"), "decisions.matcher.version", 200)
+    previous_pair_id: str | None = None
     for item in _require_list(decisions.get("decisions"), "decisions.decisions"):
         if not isinstance(item, dict):
             raise BenchmarkError("matcher decision must be a JSON object")
-        pair_id = _require_string(item.get("pair_id"), "matcher decision pair_id")
+        required = {"pair_id", "verdict", "reason"}
+        optional = {"score"}
+        if not required <= set(item) or set(item) - required - optional:
+            raise BenchmarkError("matcher decision has missing or unexpected fields")
+        pair_id = _require_id(item.get("pair_id"), "matcher decision pair_id")
+        if previous_pair_id is not None and pair_id <= previous_pair_id:
+            raise BenchmarkError("matcher decisions must be unique and sorted by pair_id")
+        previous_pair_id = pair_id
         verdict = item.get("verdict")
-        if verdict not in {"match", "no-match"}:
+        allowed = {"match", "no-match", "abstain"}
+        if verdict not in allowed:
             raise BenchmarkError(f"invalid matcher verdict for pair {pair_id!r}")
-        if pair_id in actual:
-            raise BenchmarkError(f"matcher decisions contain duplicate pair id {pair_id!r}")
+        reason = _require_string(
+            item.get("reason"), f"matcher decision {pair_id!r} reason"
+        )
+        if len(reason) > 4000:
+            raise BenchmarkError(f"matcher decision {pair_id!r} reason is too long")
+        score = item.get("score")
+        if "score" in item and score is None:
+            raise BenchmarkError(f"invalid matcher score for pair {pair_id!r}")
+        if score is not None and (
+            isinstance(score, bool)
+            or not isinstance(score, (int, float))
+            or not math.isfinite(float(score))
+            or not 0 <= score <= 1
+        ):
+            raise BenchmarkError(f"invalid matcher score for pair {pair_id!r}")
         actual[pair_id] = verdict
     if set(actual) != set(expected):
         missing = sorted(set(expected) - set(actual))
@@ -439,11 +525,15 @@ def evaluate_matcher(
         "true_no_match": 0,
         "false_no_match": 0,
         "insufficient_evidence": 0,
+        "matcher_abstain": 0,
     }
     for pair_id, human_verdict in human.items():
-        predicted_match = predicted[pair_id] == "match"
+        predicted_verdict = predicted[pair_id]
+        predicted_match = predicted_verdict == "match"
         if human_verdict == "insufficient-evidence":
             pair_counts["insufficient_evidence"] += 1
+        elif predicted_verdict == "abstain":
+            pair_counts["matcher_abstain"] += 1
         elif human_verdict == "match" and predicted_match:
             pair_counts["true_match"] += 1
         elif human_verdict == "match":
@@ -484,10 +574,97 @@ def evaluate_matcher(
     def ratio(numerator: int, denominator: int) -> float | None:
         return numerator / denominator if denominator else None
 
-    evaluable = sum(pair_counts.values()) - pair_counts["insufficient_evidence"]
+    evaluable = (
+        pair_counts["true_match"]
+        + pair_counts["false_match"]
+        + pair_counts["true_no_match"]
+        + pair_counts["false_no_match"]
+        + pair_counts["matcher_abstain"]
+    )
+    decided = evaluable - pair_counts["matcher_abstain"]
     pair_correct = pair_counts["true_match"] + pair_counts["true_no_match"]
+
+    assignment = {
+        "human_maximum": human_assignment_count,
+        "matcher_maximum": predicted_assignment_count,
+        "common_maximum": common_assignment_count,
+        "precision": ratio(common_assignment_count, predicted_assignment_count),
+        "recall": ratio(common_assignment_count, human_assignment_count),
+    }
+    if decisions.get("schema") == DECISIONS_SCHEMA:
+        return {
+            "schema": EVALUATION_SCHEMA,
+            "corpus_id": corpus["corpus_id"],
+            "corpus_sha256": corpus_sha256(corpus),
+            "decision_set_id": decisions.get("decision_set_id"),
+            "label_set_id": labels.get("label_set_id"),
+            "pair_classification": {
+                key: value
+                for key, value in pair_counts.items()
+                if key != "matcher_abstain"
+            }
+            | {
+                "evaluable": evaluable,
+                "accuracy": ratio(pair_correct, evaluable),
+            },
+            "one_to_one_assignment": assignment,
+            "groups": group_results,
+        }
+
+    _require_id(labels.get("label_set_id"), "labels.label_set_id")
+    pair_to_stratum = {
+        pair["pair_id"]: group["stratum"]
+        for group in corpus["groups"]
+        for pair in group["pairs"]
+    }
+    positive_strata = {"equivalent-paraphrase", "duplicate-restatement"}
+    negative_strata = {"related-distinct", "unrelated", "adversarial-keyword-overlap"}
+
+    def critical_gate(strata: set[str], expected_verdict: str) -> dict[str, object]:
+        pair_ids = [
+            pair_id
+            for pair_id, human_verdict in human.items()
+            if pair_to_stratum[pair_id] in strata
+            and human_verdict != "insufficient-evidence"
+            and human_verdict == expected_verdict
+        ]
+        abstained = sum(predicted[pair_id] == "abstain" for pair_id in pair_ids)
+        incorrect = sum(
+            predicted[pair_id] not in {expected_verdict, "abstain"} for pair_id in pair_ids
+        )
+        return {
+            "pairs": len(pair_ids),
+            "abstained": abstained,
+            "incorrect": incorrect,
+            "passed": bool(pair_ids) and abstained == 0 and incorrect == 0,
+        }
+
+    positive_gate = critical_gate(positive_strata, "match")
+    negative_gate = critical_gate(negative_strata, "no-match")
+    minimum_precision = 0.95
+    minimum_recall = 0.95
+    assignment_precision = assignment["precision"]
+    assignment_recall = assignment["recall"]
+    assignment_eligible = (
+        human_assignment_count > 0
+        and predicted_assignment_count > 0
+        and assignment_precision is not None
+        and assignment_recall is not None
+    )
+    assignment_gate = {
+        "eligible": assignment_eligible,
+        "minimum_precision": minimum_precision,
+        "minimum_recall": minimum_recall,
+        "actual_precision": assignment_precision,
+        "actual_recall": assignment_recall,
+        "passed": bool(
+            assignment_eligible
+            and assignment_precision >= minimum_precision
+            and assignment_recall >= minimum_recall
+        ),
+    }
     return {
-        "schema": EVALUATION_SCHEMA,
+        "schema": EVALUATION_SCHEMA_V2,
         "corpus_id": corpus["corpus_id"],
         "corpus_sha256": corpus_sha256(corpus),
         "decision_set_id": decisions.get("decision_set_id"),
@@ -495,14 +672,28 @@ def evaluate_matcher(
         "pair_classification": {
             **pair_counts,
             "evaluable": evaluable,
-            "accuracy": ratio(pair_correct, evaluable),
+            "decided": decided,
+            "accuracy": ratio(pair_correct, decided),
         },
-        "one_to_one_assignment": {
-            "human_maximum": human_assignment_count,
-            "matcher_maximum": predicted_assignment_count,
-            "common_maximum": common_assignment_count,
-            "precision": ratio(common_assignment_count, predicted_assignment_count),
-            "recall": ratio(common_assignment_count, human_assignment_count),
+        "decision_coverage": {
+            "total_pairs": len(human),
+            "human_insufficient_evidence": pair_counts["insufficient_evidence"],
+            "evaluable_pairs": evaluable,
+            "decided_pairs": decided,
+            "abstained_pairs": pair_counts["matcher_abstain"],
+            "decided_coverage": ratio(decided, evaluable),
+            "abstention_rate": ratio(pair_counts["matcher_abstain"], evaluable),
         },
+        "critical_gates": {
+            "identity_matches": positive_gate,
+            "distinct_defects": negative_gate,
+            "assignment": assignment_gate,
+            "passed": (
+                positive_gate["passed"]
+                and negative_gate["passed"]
+                and assignment_gate["passed"]
+            ),
+        },
+        "one_to_one_assignment": assignment,
         "groups": group_results,
     }

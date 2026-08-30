@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bench.flyovercoder.com/schemas/public-result-v2.schema.json",
+  "title": "Strict Public Benchmark Result v2",
+  "type": "object", "additionalProperties": false,
+  "required": [
+    "schema", "record_id", "run_id", "status", "track", "subject",
+    "release", "provenance", "quality", "operations"
+  ],
+  "properties": {
+    "schema": {"const": "review-benchmark/public-result/2"},
+    "record_id": {"$ref": "#/$defs/id"},
+    "run_id": {"$ref": "#/$defs/id"},
+    "status": {
+      "enum": ["provisional", "official", "reproduced", "superseded", "withdrawn", "disputed"]
+    },
+    "track": {"enum": ["fixed-harness-model", "end-to-end-product"]},
+    "subject": {"$ref": "#/$defs/subject"},
+    "release": {"$ref": "#/$defs/release"},
+    "provenance": {"$ref": "#/$defs/provenance"},
+    "quality": {"$ref": "#/$defs/quality"},
+    "operations": {"$ref": "#/$defs/operations"}
+  },
+  "$defs": {
+    "id": {
+      "type": "string", "minLength": 3, "maxLength": 100,
+      "pattern": "^[a-z0-9][a-z0-9._-]+$"
+    },
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "git_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "count": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+    "nullable_count": {"type": ["integer", "null"], "minimum": 0, "maximum": 9007199254740991},
+    "ratio": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "nonnegative_number": {"type": ["number", "null"], "minimum": 0},
+    "subject": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "adapter", "label", "model", "provider", "expected_reported_provider",
+        "effort", "fallbacks_disabled"
+      ],
+      "properties": {
+        "adapter": {"$ref": "#/$defs/id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 200},
+        "model": {"type": "string", "minLength": 1, "maxLength": 300},
+        "provider": {"type": ["string", "null"], "minLength": 1, "maxLength": 200},
+        "expected_reported_provider": {"type": ["string", "null"], "minLength": 1, "maxLength": 200},
+        "effort": {"type": ["string", "null"], "minLength": 1, "maxLength": 100},
+        "fallbacks_disabled": {"type": "boolean"}
+      }
+    },
+    "release": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "visibility", "task_count", "attempts_per_task"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1, "maxLength": 200},
+        "visibility": {"enum": ["public", "private"]},
+        "task_count": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+        "attempts_per_task": {"type": "integer", "minimum": 1, "maximum": 9007199254740991}
+      }
+    },
+    "provenance": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "runner_git_sha", "scorer_git_sha", "public_benchmark_git_sha",
+        "release_git_sha", "product_git_sha", "config_sha256",
+        "evaluation_config_sha256", "release_manifest_sha256",
+        "scorer_version", "provider_policy"
+      ],
+      "properties": {
+        "runner_git_sha": {"$ref": "#/$defs/git_sha"},
+        "scorer_git_sha": {"$ref": "#/$defs/git_sha"},
+        "public_benchmark_git_sha": {"$ref": "#/$defs/git_sha"},
+        "release_git_sha": {"$ref": "#/$defs/git_sha"},
+        "product_git_sha": {"$ref": "#/$defs/git_sha"},
+        "config_sha256": {"$ref": "#/$defs/sha256"},
+        "evaluation_config_sha256": {"$ref": "#/$defs/sha256"},
+        "release_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "scorer_version": {"type": "string", "minLength": 1, "maxLength": 200},
+        "provider_policy": {"type": "string", "minLength": 1, "maxLength": 2000}
+      }
+    },
+    "severity_bucket": {
+      "type": "object", "additionalProperties": false,
+      "required": ["matched", "total", "recall"],
+      "properties": {
+        "matched": {"$ref": "#/$defs/count"},
+        "total": {"$ref": "#/$defs/count"},
+        "recall": {"$ref": "#/$defs/ratio"}
+      }
+    },
+    "severity_recall": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bug", "risk", "nit"],
+      "properties": {
+        "bug": {"$ref": "#/$defs/severity_bucket"},
+        "risk": {"$ref": "#/$defs/severity_bucket"},
+        "nit": {"$ref": "#/$defs/severity_bucket"}
+      }
+    },
+    "attempt_detection_frequency": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "mean", "minimum", "maximum", "gold_findings",
+        "detected_every_attempt", "detected_some_attempts", "never_detected"
+      ],
+      "properties": {
+        "mean": {"$ref": "#/$defs/ratio"},
+        "minimum": {"$ref": "#/$defs/ratio"},
+        "maximum": {"$ref": "#/$defs/ratio"},
+        "gold_findings": {"$ref": "#/$defs/count"},
+        "detected_every_attempt": {"$ref": "#/$defs/count"},
+        "detected_some_attempts": {"$ref": "#/$defs/count"},
+        "never_detected": {"$ref": "#/$defs/count"}
+      }
+    },
+    "quality": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "attempts_scored", "macro_recall", "macro_adjudicated_precision",
+        "clean_pass_rate", "mean_noise_count", "severity_agreement",
+        "gold_findings", "matched_findings", "missed_findings",
+        "valid_extra_findings", "false_positive_findings", "duplicate_findings",
+        "pending_findings", "clean_reviews", "clean_reviews_passed",
+        "severity_recall", "attempt_detection_frequency"
+      ],
+      "properties": {
+        "attempts_scored": {"$ref": "#/$defs/count"},
+        "macro_recall": {"$ref": "#/$defs/ratio"},
+        "macro_adjudicated_precision": {"$ref": "#/$defs/ratio"},
+        "clean_pass_rate": {"$ref": "#/$defs/ratio"},
+        "mean_noise_count": {"$ref": "#/$defs/nonnegative_number"},
+        "severity_agreement": {"$ref": "#/$defs/ratio"},
+        "gold_findings": {"$ref": "#/$defs/count"},
+        "matched_findings": {"$ref": "#/$defs/count"},
+        "missed_findings": {"$ref": "#/$defs/count"},
+        "valid_extra_findings": {"$ref": "#/$defs/count"},
+        "false_positive_findings": {"$ref": "#/$defs/count"},
+        "duplicate_findings": {"$ref": "#/$defs/count"},
+        "pending_findings": {"$ref": "#/$defs/count"},
+        "clean_reviews": {"$ref": "#/$defs/count"},
+        "clean_reviews_passed": {"$ref": "#/$defs/count"},
+        "severity_recall": {"$ref": "#/$defs/severity_recall"},
+        "attempt_detection_frequency": {"$ref": "#/$defs/attempt_detection_frequency"}
+      }
+    },
+    "operations": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "reviews_attempted", "reviews_with_telemetry", "median_elapsed_ms",
+        "total_elapsed_ms", "known_elapsed_ms", "mean_input_tokens",
+        "total_input_tokens", "mean_output_tokens", "total_output_tokens",
+        "total_cached_tokens", "mean_cost_usd", "total_cost_usd",
+        "known_cost_usd", "costs_reported", "providers", "attempt_failures",
+        "attempts_skipped", "cost_guard_triggered", "observed_cost_usd"
+      ],
+      "properties": {
+        "reviews_attempted": {"$ref": "#/$defs/count"},
+        "reviews_with_telemetry": {"$ref": "#/$defs/count"},
+        "median_elapsed_ms": {"$ref": "#/$defs/nonnegative_number"},
+        "total_elapsed_ms": {"$ref": "#/$defs/nullable_count"},
+        "known_elapsed_ms": {"$ref": "#/$defs/nullable_count"},
+        "mean_input_tokens": {"$ref": "#/$defs/nonnegative_number"},
+        "total_input_tokens": {"$ref": "#/$defs/nullable_count"},
+        "mean_output_tokens": {"$ref": "#/$defs/nonnegative_number"},
+        "total_output_tokens": {"$ref": "#/$defs/nullable_count"},
+        "total_cached_tokens": {"$ref": "#/$defs/nullable_count"},
+        "mean_cost_usd": {"$ref": "#/$defs/nonnegative_number"},
+        "total_cost_usd": {"$ref": "#/$defs/nonnegative_number"},
+        "known_cost_usd": {"$ref": "#/$defs/nonnegative_number"},
+        "costs_reported": {"$ref": "#/$defs/count"},
+        "providers": {
+          "type": "array", "maxItems": 100, "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1, "maxLength": 200}
+        },
+        "attempt_failures": {"$ref": "#/$defs/count"},
+        "attempts_skipped": {"$ref": "#/$defs/count"},
+        "cost_guard_triggered": {"type": "boolean"},
+        "observed_cost_usd": {"type": "number", "minimum": 0}
+      }
+    }
+  }
+}

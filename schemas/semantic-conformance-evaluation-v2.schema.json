@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bench.flyovercoder.com/schemas/semantic-conformance-evaluation-v2.schema.json",
+  "title": "Tri-State Semantic Matcher Conformance Evaluation",
+  "type": "object", "additionalProperties": false,
+  "required": [
+    "schema", "corpus_id", "corpus_sha256", "decision_set_id", "label_set_id",
+    "pair_classification", "decision_coverage", "critical_gates",
+    "one_to_one_assignment", "groups"
+  ],
+  "properties": {
+    "schema": {"const": "review-benchmark/semantic-conformance-evaluation/2"},
+    "corpus_id": {"$ref": "#/$defs/id"},
+    "corpus_sha256": {"$ref": "#/$defs/sha256"},
+    "decision_set_id": {"$ref": "#/$defs/id"},
+    "label_set_id": {"$ref": "#/$defs/id"},
+    "pair_classification": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "true_match", "false_match", "true_no_match", "false_no_match",
+        "insufficient_evidence", "matcher_abstain", "evaluable", "decided", "accuracy"
+      ],
+      "properties": {
+        "true_match": {"$ref": "#/$defs/count"},
+        "false_match": {"$ref": "#/$defs/count"},
+        "true_no_match": {"$ref": "#/$defs/count"},
+        "false_no_match": {"$ref": "#/$defs/count"},
+        "insufficient_evidence": {"$ref": "#/$defs/count"},
+        "matcher_abstain": {"$ref": "#/$defs/count"},
+        "evaluable": {"$ref": "#/$defs/count"},
+        "decided": {"$ref": "#/$defs/count"},
+        "accuracy": {"$ref": "#/$defs/ratio"}
+      }
+    },
+    "decision_coverage": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "total_pairs", "human_insufficient_evidence", "evaluable_pairs",
+        "decided_pairs", "abstained_pairs", "decided_coverage", "abstention_rate"
+      ],
+      "properties": {
+        "total_pairs": {"$ref": "#/$defs/count"},
+        "human_insufficient_evidence": {"$ref": "#/$defs/count"},
+        "evaluable_pairs": {"$ref": "#/$defs/count"},
+        "decided_pairs": {"$ref": "#/$defs/count"},
+        "abstained_pairs": {"$ref": "#/$defs/count"},
+        "decided_coverage": {"$ref": "#/$defs/ratio"},
+        "abstention_rate": {"$ref": "#/$defs/ratio"}
+      }
+    },
+    "critical_gates": {
+      "type": "object", "additionalProperties": false,
+      "required": ["identity_matches", "distinct_defects", "assignment", "passed"],
+      "properties": {
+        "identity_matches": {"$ref": "#/$defs/classification_gate"},
+        "distinct_defects": {"$ref": "#/$defs/classification_gate"},
+        "assignment": {"$ref": "#/$defs/assignment_gate"},
+        "passed": {"type": "boolean"}
+      }
+    },
+    "one_to_one_assignment": {"$ref": "#/$defs/assignment"},
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["group_id", "stratum", "human_maximum", "matcher_maximum", "common_maximum"],
+        "properties": {
+          "group_id": {"$ref": "#/$defs/id"},
+          "stratum": {"type": "string", "minLength": 1},
+          "human_maximum": {"$ref": "#/$defs/count"},
+          "matcher_maximum": {"$ref": "#/$defs/count"},
+          "common_maximum": {"$ref": "#/$defs/count"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string", "minLength": 3, "maxLength": 100,
+      "pattern": "^[a-z0-9][a-z0-9._-]+$"
+    },
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "count": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+    "ratio": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "classification_gate": {
+      "type": "object", "additionalProperties": false,
+      "required": ["pairs", "abstained", "incorrect", "passed"],
+      "properties": {
+        "pairs": {"$ref": "#/$defs/count"},
+        "abstained": {"$ref": "#/$defs/count"},
+        "incorrect": {"$ref": "#/$defs/count"},
+        "passed": {"type": "boolean"}
+      }
+    },
+    "assignment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["human_maximum", "matcher_maximum", "common_maximum", "precision", "recall"],
+      "properties": {
+        "human_maximum": {"$ref": "#/$defs/count"},
+        "matcher_maximum": {"$ref": "#/$defs/count"},
+        "common_maximum": {"$ref": "#/$defs/count"},
+        "precision": {"$ref": "#/$defs/ratio"},
+        "recall": {"$ref": "#/$defs/ratio"}
+      }
+    },
+    "assignment_gate": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "eligible", "minimum_precision", "minimum_recall",
+        "actual_precision", "actual_recall", "passed"
+      ],
+      "properties": {
+        "eligible": {"type": "boolean"},
+        "minimum_precision": {"type": "number", "minimum": 0, "maximum": 1},
+        "minimum_recall": {"type": "number", "minimum": 0, "maximum": 1},
+        "actual_precision": {"$ref": "#/$defs/ratio"},
+        "actual_recall": {"$ref": "#/$defs/ratio"},
+        "passed": {"type": "boolean"}
+      }
+    }
+  }
+}
