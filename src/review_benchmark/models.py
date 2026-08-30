@@ -18,6 +18,7 @@ GOLD_SCHEMA = "review-benchmark/gold/1"
 ADJUDICATION_SCHEMA = "review-benchmark/adjudications/1"
 FINDINGS_SCHEMA = "review-benchmark/findings/1"
 RELEASE_SCHEMA = "review-benchmark/release/1"
+RELEASE_SCHEMA_V2 = "review-benchmark/release/2"
 
 SEVERITIES = ("bug", "risk", "nit")
 CONTEXT_CLASSES = ("diff", "file", "repo", "history", "external-authority")
@@ -122,13 +123,52 @@ def _require_version(value: object, label: str) -> str:
     return version
 
 
+def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise BenchmarkError(f"JSON contains duplicate object key {key!r}")
+        result[key] = value
+    return result
+
+
+def _reject_nonfinite_json_number(value: str) -> None:
+    raise BenchmarkError(f"JSON contains a non-finite numeric literal {value!r}")
+
+
+def _validate_json_unicode(value: object) -> None:
+    if isinstance(value, dict):
+        for key, child in value.items():
+            _validate_json_unicode(key)
+            _validate_json_unicode(child)
+    elif isinstance(value, list):
+        for child in value:
+            _validate_json_unicode(child)
+    elif isinstance(value, str) and any(0xD800 <= ord(character) <= 0xDFFF for character in value):
+        raise BenchmarkError("JSON contains an unpaired Unicode surrogate")
+
+
+def _json_loads(raw: str | bytes, label: str) -> object:
+    try:
+        value = json.loads(
+            raw,
+            object_pairs_hook=_reject_duplicate_keys,
+            parse_constant=_reject_nonfinite_json_number,
+        )
+    except (json.JSONDecodeError, UnicodeError) as exc:
+        raise BenchmarkError(f"invalid JSON in {label}: {exc}") from exc
+    _validate_json_unicode(value)
+    return value
+
+
 def _read_json(path: Path, label: str) -> object:
     if not path.is_file():
         raise BenchmarkError(f"missing {label}: {path}")
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        raise BenchmarkError(f"invalid JSON in {label} {path}: {exc}") from exc
+        raw = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise BenchmarkError(f"cannot read {label} {path}: {exc}") from exc
+    return _json_loads(raw, f"{label} {path}")
 
 
 def normalize_relative_path(value: object, label: str) -> str:

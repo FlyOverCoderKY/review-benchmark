@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bench.flyovercoder.com/schemas/result-registry.schema.json",
+  "title": "Immutable Public Result Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "records"],
+  "properties": {
+    "schema": {"const": "review-benchmark/result-registry/1"},
+    "records": {
+      "type": "array", "maxItems": 100000,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["record_id", "path", "sha256", "supersedes", "reproduces"],
+        "properties": {
+          "record_id": {"$ref": "#/$defs/id"},
+          "path": {
+            "type": "string", "minLength": 16, "maxLength": 113,
+            "pattern": "^records/[a-z0-9][a-z0-9._-]{2,99}\\.json$"
+          },
+          "sha256": {"$ref": "#/$defs/sha256"},
+          "supersedes": {"anyOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]},
+          "reproduces": {"anyOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string", "minLength": 3, "maxLength": 100,
+      "pattern": "^[a-z0-9][a-z0-9._-]+$"
+    },
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

@@ -37,9 +37,12 @@ by curated rules as `valid_extra` or `false_positive`; everything else is `pendi
 for adjudication. Pending does not silently become false merely because the gold
 set is incomplete.
 
-The current regex-backed matcher is a calibration mechanism, not the final oracle
-for natural real-PR findings. Before an official real-PR release, semantic matching
-will be calibrated against blinded human decisions and a public conformance suite.
+The regex-backed matcher remains a calibration mechanism, not the final oracle
+for natural real-PR findings. Semantic matchers use reasoned tri-state decisions:
+`match`, `no-match`, or `abstain`. Evaluation reports accuracy only over decided
+pairs, publishes decided coverage and abstention separately, and applies critical
+identity/distinct-defect gates. Before an official real-PR release, semantic matching
+is calibrated against blinded human decisions and a public conformance suite.
 The first unlabeled public suite contains grouped reference/candidate pairs. Two
 independent reviewers label blinded queues, a separate adjudicator resolves only
 their disagreements, and evaluation uses maximum one-to-one assignment for both
@@ -68,13 +71,17 @@ when available, unpublished owned or partner cases. Every private run records
 which endpoint received which cohort and the provider retention policy at that
 time.
 
-Releases are immutable. Exposure, oracle defects, scorer changes, or takedowns
-create a new release and a historical disposition rather than an in-place rewrite.
+Official `release/2` manifests enumerate every artifact with its exact size and
+SHA-256 digest and bind the public scorer revision. Releases are immutable.
+Exposure, oracle defects, scorer changes, or takedowns create a new release and a
+historical disposition rather than an in-place rewrite.
 
 ## Publication
 
 Raw held-out prompts, outputs, labels, locations, canaries, and judge deliberations
-remain private. A versioned allowlist distills aggregate public records. Official
-results enter this repository through a reviewed pull request; a merge dispatches
-the exact source SHA to the static site, which imports it through another reviewed
-pull request.
+remain private. A versioned allowlist distills aggregate `public-result/2` records.
+Unmatched findings require a sealed, run-bound two-human adjudication overlay;
+disagreement, oracle gaps, and insufficient evidence block publication. Official
+results enter the append-only registry through a reviewed pull request; a merge
+dispatches the exact source SHA to the static site, which imports it through
+another reviewed pull request.

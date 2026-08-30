@@ -11,6 +11,7 @@ from review_benchmark.models import (
     TASK_SCHEMA_V1,
     TASK_SCHEMA_V2,
     BenchmarkError,
+    _json_loads,
     load_task,
 )
 from review_benchmark.release import load_release, sha256_file, summarize_task_coverage
@@ -22,7 +23,7 @@ V2_FIXTURE = ROOT / "fixtures" / "conformance" / "task-v2"
 
 
 def _read_json(path: Path) -> dict[str, object]:
-    value = json.loads(path.read_text(encoding="utf-8"))
+    value = _json_loads(path.read_text(encoding="utf-8"), f"JSON {path}")
     assert isinstance(value, dict)
     return value
 

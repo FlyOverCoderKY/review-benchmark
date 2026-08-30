@@ -8,7 +8,8 @@ from pathlib import Path
 import pytest
 from jsonschema import Draft202012Validator
 
-from review_benchmark.models import BenchmarkError
+from review_benchmark.cli import main
+from review_benchmark.models import BenchmarkError, _json_loads
 from review_benchmark.semantic_conformance import (
     _maximum_assignment,
     build_adjudicated_labels,
@@ -17,6 +18,7 @@ from review_benchmark.semantic_conformance import (
     corpus_sha256,
     evaluate_matcher,
     load_corpus,
+    load_matcher_decisions,
 )
 
 ROOT = Path(__file__).parents[1]
@@ -24,7 +26,9 @@ CORPUS_PATH = ROOT / "fixtures" / "semantic-conformance-v0.1" / "corpus.json"
 
 
 def _schema(name: str) -> dict[str, object]:
-    payload = json.loads((ROOT / "schemas" / name).read_text(encoding="utf-8"))
+    payload = _json_loads(
+        (ROOT / "schemas" / name).read_text(encoding="utf-8"), f"schema {name}"
+    )
     assert isinstance(payload, dict)
     Draft202012Validator.check_schema(payload)
     return payload
@@ -145,6 +149,56 @@ def test_disagreement_queue_contains_only_differences_and_no_adjudication() -> N
     Draft202012Validator(_schema("semantic-conformance-labels.schema.json")).validate(adjudicated)
 
 
+def test_semantic_adjudicate_rejects_duplicate_json_keys(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    corpus = load_corpus(CORPUS_PATH)
+    first_pair = corpus["groups"][0]["pairs"][0]["pair_id"]
+    labels_a = _complete(
+        build_blinded_labels(corpus, label_set_id="reviewer-a-v1", reviewer_id="reviewer-a"),
+        {first_pair: "match"},
+    )
+    labels_b = _complete(
+        build_blinded_labels(corpus, label_set_id="reviewer-b-v1", reviewer_id="reviewer-b"),
+        {},
+    )
+    disagreements = build_disagreements(
+        corpus, (labels_a, labels_b), disagreement_set_id="human-disagreements-v1"
+    )
+    disagreements["status"] = "resolved"
+    disagreements["disagreements"][0]["adjudicated_verdict"] = "match"
+    disagreements["disagreements"][0]["adjudicator_rationale"] = "Same defect."
+    paths = [tmp_path / "labels-a.json", tmp_path / "labels-b.json"]
+    for path, payload in zip(paths, (labels_a, labels_b), strict=True):
+        path.write_text(json.dumps(payload), encoding="utf-8")
+    raw = json.dumps(disagreements).replace(
+        '"status": "resolved"',
+        '"status": "resolved", "status": "resolved"',
+        1,
+    )
+    disagreements_path = tmp_path / "disagreements.json"
+    disagreements_path.write_text(raw, encoding="utf-8")
+
+    assert (
+        main(
+            [
+                "semantic-adjudicate",
+                str(CORPUS_PATH),
+                str(disagreements_path),
+                *(str(path) for path in paths),
+                "--label-set-id",
+                "adjudicated-v1",
+                "--adjudicator-id",
+                "adjudicator-a",
+                "--out",
+                str(tmp_path / "out.json"),
+            ]
+        )
+        == 2
+    )
+    assert "duplicate object key" in capsys.readouterr().err
+
+
 def test_evaluation_uses_maximum_one_to_one_assignment_for_duplicates_and_bundles() -> None:
     corpus = load_corpus(CORPUS_PATH)
     queue = build_blinded_labels(corpus, label_set_id="adjudicated-v1", reviewer_id="adjudicator-a")
@@ -200,3 +254,85 @@ def test_evaluation_rejects_unadjudicated_human_labels() -> None:
 
     with pytest.raises(BenchmarkError, match="adjudicated"):
         evaluate_matcher(corpus, _matcher_decisions(corpus, set()), labels)
+
+
+def _matcher_decisions_v2(
+    corpus: dict[str, object], verdicts: dict[str, str]
+) -> dict[str, object]:
+    return {
+        "schema": "review-benchmark/semantic-matcher-decisions/2",
+        "decision_set_id": "matcher-test-v2",
+        "corpus_id": corpus["corpus_id"],
+        "corpus_sha256": corpus_sha256(corpus),
+        "matcher": {"name": "test-matcher", "version": "2"},
+        "decisions": [
+            {
+                "pair_id": pair["pair_id"],
+                "verdict": verdicts.get(pair["pair_id"], "no-match"),
+                "reason": "The matcher compared trigger, impact, and location.",
+            }
+            for group in corpus["groups"]
+            for pair in group["pairs"]
+        ],
+    }
+
+
+def test_v2_matcher_requires_reason_for_every_tri_state_decision(tmp_path: Path) -> None:
+    corpus = load_corpus(CORPUS_PATH)
+    decisions = _matcher_decisions_v2(corpus, {})
+    Draft202012Validator(_schema("semantic-matcher-decisions-v2.schema.json")).validate(
+        decisions
+    )
+    decisions["decisions"][0].pop("reason")
+    path = tmp_path / "decisions.json"
+    path.write_text(json.dumps(decisions), encoding="utf-8")
+
+    with pytest.raises(BenchmarkError, match="missing or unexpected"):
+        load_matcher_decisions(path, corpus)
+
+
+def test_v2_matcher_rejects_non_normalized_identifier(tmp_path: Path) -> None:
+    corpus = load_corpus(CORPUS_PATH)
+    decisions = _matcher_decisions_v2(corpus, {})
+    decisions["decision_set_id"] = "Uppercase-ID"
+    path = tmp_path / "decisions.json"
+    path.write_text(json.dumps(decisions), encoding="utf-8")
+
+    with pytest.raises(BenchmarkError, match="normalized identifier"):
+        load_matcher_decisions(path, corpus)
+
+
+def test_v2_matcher_rejects_explicit_null_score(tmp_path: Path) -> None:
+    corpus = load_corpus(CORPUS_PATH)
+    decisions = _matcher_decisions_v2(corpus, {})
+    decisions["decisions"][0]["score"] = None
+    path = tmp_path / "decisions.json"
+    path.write_text(json.dumps(decisions), encoding="utf-8")
+
+    with pytest.raises(BenchmarkError, match="invalid matcher score"):
+        load_matcher_decisions(path, corpus)
+
+
+def test_v2_abstention_reduces_decided_coverage_and_fails_critical_gate() -> None:
+    corpus = load_corpus(CORPUS_PATH)
+    queue = build_blinded_labels(corpus, label_set_id="adjudicated-v2", reviewer_id="reviewer-a")
+    labels = _complete(queue, {}, kind="adjudicated")
+    critical_group = next(group for group in corpus["groups"] if group["stratum"] == "unrelated")
+    critical_pair = critical_group["pairs"][0]["pair_id"]
+    decisions = _matcher_decisions_v2(corpus, {critical_pair: "abstain"})
+
+    result = evaluate_matcher(corpus, decisions, labels)
+
+    assert result["pair_classification"]["matcher_abstain"] == 1
+    assert result["decision_coverage"]["abstained_pairs"] == 1
+    assert result["decision_coverage"]["decided_coverage"] == pytest.approx(59 / 60)
+    assert result["critical_gates"]["distinct_defects"] == {
+        "pairs": 18,
+        "abstained": 1,
+        "incorrect": 0,
+        "passed": False,
+    }
+    assert result["critical_gates"]["passed"] is False
+    Draft202012Validator(
+        _schema("semantic-conformance-evaluation-v2.schema.json")
+    ).validate(result)

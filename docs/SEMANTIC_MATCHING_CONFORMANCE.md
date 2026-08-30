@@ -94,9 +94,12 @@ cannot invent a disposition: unresolved or omitted disagreements fail closed.
 
 ## Matcher evaluation
 
-A matcher emits one `match` or `no-match` decision for every pair using
-`schemas/semantic-matcher-decisions.schema.json`. Pin its name and version. Then
-compare it with the completed adjudicated labels:
+A matcher emits one reasoned `match`, `no-match`, or `abstain` decision for every
+pair using `semantic-matcher-decisions/2` in
+`schemas/semantic-matcher-decisions-v2.schema.json`. Pin its name and version. An
+abstention is preferable to an invented match, but it does not silently disappear
+from the score. The legacy two-state decisions/1 contract remains loadable for
+calibration history. Then compare decisions with the completed adjudicated labels:
 
 ```bash
 python -m review_benchmark semantic-evaluate \
@@ -105,8 +108,11 @@ python -m review_benchmark semantic-evaluate \
   --out evaluation.json
 ```
 
-The report contains ordinary pair-classification counts and assignment-aware
-precision and recall. For every group, the evaluator independently computes the
+The report contains ordinary pair-classification counts, decided coverage,
+abstention rate, critical identity/distinct-defect gates, and assignment-aware
+precision and recall. Accuracy uses decided pairs as its denominator. Critical
+abstentions fail the applicable gate rather than receiving accidental credit. For
+every group, the evaluator independently computes the
 maximum cardinality of the human-approved, matcher-approved, and common edge
 sets. A duplicate pair or bundled comment therefore cannot multiply credit. An
 `insufficient-evidence` human label is excluded from pair accuracy and from both
@@ -122,8 +128,11 @@ The versioned contracts are:
 - `schemas/semantic-conformance-corpus.schema.json`;
 - `schemas/semantic-conformance-labels.schema.json`;
 - `schemas/semantic-conformance-disagreements.schema.json`;
-- `schemas/semantic-matcher-decisions.schema.json`; and
-- `schemas/semantic-conformance-evaluation.schema.json`.
+- `schemas/semantic-matcher-decisions.schema.json` and
+  `schemas/semantic-conformance-evaluation.schema.json` for the frozen v1
+  contracts; and
+- `schemas/semantic-matcher-decisions-v2.schema.json` and
+  `schemas/semantic-conformance-evaluation-v2.schema.json` for tri-state v2.
 
 Regenerate or verify the corpus with:
 
